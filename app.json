@@ -1,0 +1,46 @@
+{
+  "expo": {
+    "name": "동대문 종합시장 셰르파",
+    "slug": "ddm-sherpa",
+    "scheme": "ddmsherpa",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#0B2E5A"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.ddmsherpa.app",
+      "usesAppleSignIn": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "동대문 종합시장 내 현재 위치 기준 길안내를 위해 사용할 수 있습니다."
+      }
+    },
+    "android": {
+      "package": "com.ddmsherpa.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#0B2E5A"
+      }
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-font",
+      "expo-apple-authentication"
+    ],
+    "experiments": {
+      "typedRoutes": false
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      }
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm --version)",
+      "Bash(npm install *)",
+      "Bash(EXPO_NO_TELEMETRY=1 CI=1 npx expo start --web --port 8081)",
+      "Bash(EXPO_NO_TELEMETRY=1 npx expo start --web --port 8084)",
+      "Bash(curl *)",
+      "Bash(taskkill //F //IM node.exe)",
+      "Bash(netstat -ano)",
+      "Bash(EXPO_NO_TELEMETRY=1 npx expo start --web --port 8084 --clear)",
+      "Bash(node -e ' *)",
+      "Bash(mkdir -p \"C:/VSCODE/DONGDAEMOON/src/data/stores\")",
+      "Bash(grep -v -E \"^\\(index|_autoLayout|_grid\\)\\\\.ts$\")",
+      "Skill(update-config)",
+      "Bash(node *)",
+      "Read(//c/Users/1/AppData/Local/Temp/claude/C--VSCODE-DONGDAEMOON/355ed978-460d-45f5-af58-d9421ea74823/tasks/**)"
+    ]
+  }
+}

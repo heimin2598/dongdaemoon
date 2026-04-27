@@ -1,0 +1,52 @@
+{
+  "B1F": {
+    "w": 4612,
+    "h": 3190,
+    "file": "floor_B1F.png"
+  },
+  "1F": {
+    "w": 4381,
+    "h": 3203,
+    "file": "floor_1F.png"
+  },
+  "2F": {
+    "w": 4406,
+    "h": 3077,
+    "file": "floor_2F.png"
+  },
+  "3F": {
+    "w": 4312,
+    "h": 3088,
+    "file": "floor_3F.png"
+  },
+  "4F": {
+    "w": 4300,
+    "h": 3094,
+    "file": "floor_4F.png"
+  },
+  "5F": {
+    "w": 4344,
+    "h": 3090,
+    "file": "floor_5F.png"
+  },
+  "6F": {
+    "w": 4359,
+    "h": 3128,
+    "file": "floor_6F.png"
+  },
+  "7F": {
+    "w": 4311,
+    "h": 3125,
+    "file": "floor_7F.png"
+  },
+  "8F": {
+    "w": 4311,
+    "h": 3125,
+    "file": "floor_8F.png"
+  },
+  "9F": {
+    "w": 4311,
+    "h": 3125,
+    "file": "floor_9F.png"
+  }
+}
