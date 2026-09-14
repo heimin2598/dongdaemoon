@@ -1,5 +1,6 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '@/constants/colors';
 
 interface Props {
@@ -23,10 +24,12 @@ export function MapControls({
   onExitFullscreen,
   showZoomButtons = true,
 }: Props) {
+  const insets = useSafeAreaInsets();
+  const bottom = 12 + insets.bottom;
   return (
     <>
       {/* 좌측 하단: 줌 컨트롤 (showZoomButtons=true면 +/-/리셋, false면 리셋만) */}
-      <View style={styles.zoomGroup} pointerEvents="box-none">
+      <View style={[styles.zoomGroup, { bottom }]} pointerEvents="box-none">
         {showZoomButtons && (
           <>
             <Pressable style={styles.button} onPress={onZoomIn}>
@@ -46,12 +49,12 @@ export function MapControls({
 
       {/* 우측 하단: 전체보기 토글 */}
       {onFullscreen && (
-        <Pressable style={styles.fullscreenButton} onPress={onFullscreen} accessibilityLabel="전체보기">
+        <Pressable style={[styles.fullscreenButton, { bottom }]} onPress={onFullscreen} accessibilityLabel="전체보기">
           <Text style={styles.fullscreenIcon}>⛶</Text>
         </Pressable>
       )}
       {onExitFullscreen && (
-        <Pressable style={styles.fullscreenButton} onPress={onExitFullscreen} accessibilityLabel="전체보기 해제">
+        <Pressable style={[styles.fullscreenButton, { bottom }]} onPress={onExitFullscreen} accessibilityLabel="전체보기 해제">
           <Text style={styles.fullscreenIcon}>✕</Text>
         </Pressable>
       )}

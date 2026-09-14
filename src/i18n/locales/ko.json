@@ -1,0 +1,111 @@
+{
+  "language": {
+    "ko": "한국어",
+    "en": "English",
+    "zh-Hans": "简体中文",
+    "ja": "日本語"
+  },
+  "common": {
+    "confirm": "확인",
+    "cancel": "취소",
+    "save": "저장",
+    "delete": "삭제",
+    "close": "닫기",
+    "loading": "불러오는 중...",
+    "retry": "다시 시도",
+    "back": "뒤로"
+  },
+  "auth": {
+    "selectLanguage": "언어 선택",
+    "selectLanguageDesc": "앱에서 사용할 언어를 선택해 주세요.",
+    "signIn": "로그인",
+    "signUp": "회원가입",
+    "email": "이메일",
+    "password": "비밀번호",
+    "googleSignIn": "구글로 계속하기",
+    "appleSignIn": "Apple 로 계속하기",
+    "logout": "로그아웃",
+    "selectRole": "회원 유형 선택",
+    "selectRoleDesc": "가입 유형을 선택해 주세요.",
+    "visitor": "방문자",
+    "visitorTitle": "방문자 회원가입",
+    "visitorDesc": "동대문 종합시장을 방문하는\n고객을 위한 가입입니다.",
+    "merchant": "매장 사장님",
+    "merchantTitle": "매장 사장님 회원가입",
+    "merchantDesc": "동대문 종합시장 내 매장을\n운영하시는 사장님을 위한 가입입니다.",
+    "alreadyHaveAccount": "이미 계정이 있으신가요?"
+  },
+  "pending": {
+    "inProgress": "매장 인증 절차가 진행중입니다",
+    "approved": "매장 인증이 완료되었습니다",
+    "rejected": "매장 인증이 거부되었습니다",
+    "approvedDesc": "동대문 종합시장 셰르파의 모든 사장님 기능을 사용하실 수 있습니다.",
+    "inProgressDesc": "운영자가 신청하신 매장 정보를 확인 중입니다.",
+    "applicationId": "신청 ID",
+    "refresh": "인증 상태 새로고침",
+    "askAdmin": "운영자에게 문의하기",
+    "retry": "다시 신청하기"
+  },
+  "parts": {
+    "tabFind": "부자재 찾기",
+    "tabSupply": "상품 공급",
+    "myField": "내 분야",
+    "all": "전체",
+    "newRequest": "+ 요청 등록",
+    "empty": "아직 등록된 요청이 없어요"
+  },
+  "shop": {
+    "operatingStatus": "영업 상태",
+    "open": "영업중",
+    "lunch": "점심시간",
+    "away": "잠시 자리비움",
+    "closed": "휴무",
+    "paymentMethods": "결제 수단"
+  },
+  "home": {
+    "greet": "어디를 찾으시나요?",
+    "searchPlaceholder": "예: 헤이민레이스, 원단, 화장실, A3156호",
+    "favorites": "관심 매장",
+    "quickAccess": "빠른 진입"
+  },
+  "search": {
+    "title": "매장 찾기",
+    "searchPlaceholder": "상호명·품목·호수·전화번호"
+  },
+  "store": {
+    "verifiedBadge": "인증 매장",
+    "viewOnMap": "위치 보기",
+    "viewReviews": "리뷰 보기",
+    "chatWithOwner": "사장님께 메시지 보내기",
+    "registerFavorite": "관심 매장 등록",
+    "removeFavorite": "관심 매장 해제"
+  },
+  "chat": {
+    "translate": "{{lang}}로 번역",
+    "showOriginal": "원문 보기",
+    "originalLabel": "원문 ({{lang}})",
+    "messagePlaceholder": "메시지 입력",
+    "sendImage": "사진",
+    "sendVideo": "영상",
+    "emptyChat": "대화를 시작해 보세요.",
+    "tapToPlay": "탭하여 재생"
+  },
+  "qr": {
+    "myQr": "내 QR",
+    "myShopQr": "내 매장 QR",
+    "scan": "QR 스캔",
+    "scanHint": "QR 코드를 사각형 안에 맞춰주세요",
+    "permissionRequired": "카메라 권한이 필요합니다.",
+    "grantPermission": "권한 허용"
+  },
+  "tabs": {
+    "home": "홈",
+    "map": "지도",
+    "search": "매장찾기",
+    "parts": "부자재",
+    "partsSupply": "상품 공급",
+    "customers": "고객",
+    "messenger": "메신저",
+    "account": "MY"
+  }
+}

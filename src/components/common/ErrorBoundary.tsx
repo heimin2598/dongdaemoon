@@ -19,10 +19,9 @@ export class ErrorBoundary extends React.Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
-    if (__DEV__) {
-      // eslint-disable-next-line no-console
-      console.error('[ErrorBoundary]', error, info);
-    }
+    // closed alpha 디버깅용 — 항상 콘솔에도 출력 (adb logcat 으로도 보이도록)
+    // eslint-disable-next-line no-console
+    console.error('[ErrorBoundary]', error?.message, error?.stack, info?.componentStack);
   }
 
   reset = () => this.setState({ error: null });
@@ -39,11 +38,10 @@ export class ErrorBoundary extends React.Component<Props, State> {
         <Text style={styles.desc}>
           화면을 그리는 중 예상치 못한 오류가 발생했어요. 다시 시도해 주세요.
         </Text>
-        {__DEV__ && (
-          <Text style={styles.dev} numberOfLines={4}>
-            {error.message}
-          </Text>
-        )}
+        {/* 진단을 위해 production 에서도 에러 메시지를 표시 — closed alpha 동안만 유지 */}
+        <Text style={styles.dev} numberOfLines={6}>
+          {error.message || String(error)}
+        </Text>
         <Pressable style={styles.button} onPress={this.reset}>
           <Text style={styles.buttonText}>다시 시도</Text>
         </Pressable>

@@ -42,7 +42,7 @@ export default function NavigationScreen() {
 
   if (!destination) {
     return (
-      <SafeAreaView style={styles.safe} edges={['top']}>
+      <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
         <ScreenHeader title="길안내" />
         <View style={styles.center}>
           <Text style={styles.emptyText}>목적지 정보가 없습니다.</Text>
@@ -53,7 +53,7 @@ export default function NavigationScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
+    <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <ScreenHeader
         title="길안내"
         subtitle={`${origin?.label ?? '출발지'} → ${destination.name ?? destination.unitNumber ?? '목적지'}`}

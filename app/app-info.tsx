@@ -1,16 +1,23 @@
 import React from 'react';
 import { Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import Constants from 'expo-constants';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { Colors } from '@/constants/colors';
 
 const APP_NAME = '동대문 종합시장 셰르파';
 const APP_NAME_EN = 'DDM Sherpa';
-const VERSION = '0.1.0';
-const BUILD_DATE = '2026년 4월 23일';
+// 실제 빌드에서 주입된 값 (Play Console / TestFlight 가 부여한 versionCode/buildNumber).
+// 사용자가 본인 폰의 실제 설치 버전을 앱 정보 화면에서 즉시 확인할 수 있도록.
+const VERSION = Constants.nativeApplicationVersion ?? Constants.expoConfig?.version ?? '1.0.0';
+const BUILD_NUMBER =
+  Constants.nativeBuildVersion ??
+  Constants.expoConfig?.android?.versionCode?.toString() ??
+  Constants.expoConfig?.ios?.buildNumber ??
+  '?';
 const CONTACT_EMAIL = 'heimin2598@gmail.com';
 const AD_EMAIL = 'rothy2874@naver.com';
-const DEVELOPER = '동대문 셰르파 팀';
+const DEVELOPER = '헤이민';
 
 export default function AppInfoScreen() {
   const openMail = (to: string, subject: string) => {
@@ -19,7 +26,7 @@ export default function AppInfoScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
+    <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <ScreenHeader title="앱 정보" />
       <ScrollView contentContainerStyle={styles.content}>
         {/* 앱 히어로 */}
@@ -30,7 +37,7 @@ export default function AppInfoScreen() {
           <Text style={styles.appName}>{APP_NAME}</Text>
           <Text style={styles.appNameEn}>{APP_NAME_EN}</Text>
           <View style={styles.versionPill}>
-            <Text style={styles.versionText}>v{VERSION}</Text>
+            <Text style={styles.versionText}>v{VERSION} · build {String(BUILD_NUMBER)}</Text>
           </View>
         </View>
 
@@ -55,7 +62,7 @@ export default function AppInfoScreen() {
         {/* 버전/빌드 정보 */}
         <Section title="버전 정보">
           <Row label="앱 버전" value={VERSION} />
-          <Row label="빌드 일자" value={BUILD_DATE} />
+          <Row label="빌드 번호" value={String(BUILD_NUMBER)} />
           <Row label="플랫폼" value={Platform.OS === 'web' ? '웹' : Platform.OS === 'ios' ? 'iOS' : Platform.OS === 'android' ? 'Android' : Platform.OS} />
         </Section>
 
@@ -68,6 +75,16 @@ export default function AppInfoScreen() {
           <Pressable onPress={() => openMail(AD_EMAIL, '[광고 문의]')}>
             <Row label="광고 문의" value={AD_EMAIL} link />
           </Pressable>
+        </Section>
+
+        {/* 사업자 정보 — 전자상거래법 / 통신판매업 신고 표시 */}
+        <Section title="사업자 정보">
+          <Row label="상호" value="헤이민" />
+          <Row label="대표자" value="정혜민" />
+          <Row label="사업자번호" value="665-38-00101" />
+          <Row label="통신판매업" value="제 2017-강원원주-00079호" />
+          <Row label="주소" value="강원도 원주시 개운4길 1-5 3층" />
+          <Row label="고객센터" value="033-761-2560" />
         </Section>
 
         {/* 데이터 출처 */}

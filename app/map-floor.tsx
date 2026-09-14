@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import { Dimensions, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { ChevronLeft } from 'lucide-react-native';
 import { FloorSelector } from '@/components/map/FloorSelector';
 import { MapCanvas } from '@/components/map/MapCanvas';
 import { ZoomableMap, ZoomableMapHandle } from '@/components/map/ZoomableMap';
@@ -37,7 +38,7 @@ export default function MapFloorScreen() {
           hitSlop={12}
           style={styles.backBtn}
         >
-          <Text style={styles.backText}>‹</Text>
+          <ChevronLeft size={26} color={Colors.text} strokeWidth={2} />
         </Pressable>
         <View style={{ flex: 1 }}>
           <Text style={styles.headerTitle}>층별 보기 · {FLOOR_LABEL[selectedFloor]}</Text>

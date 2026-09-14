@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "387030473505",
+    "project_id": "dongdaemoon-vscode",
+    "storage_bucket": "dongdaemoon-vscode.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:387030473505:android:fa080b9a707dfa8f6b7c60",
+        "android_client_info": {
+          "package_name": "com.ddmsherpa.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "387030473505-j6u3q7b7cekjfgh4oqjevbvusocc59rp.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyArYEFDnlRrhZ3VsYVlcmnJk5RjOcrCuPQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "387030473505-j6u3q7b7cekjfgh4oqjevbvusocc59rp.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "387030473505-3flrftq1bid8ka63t4i2fj06jc96h5ha.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.ddmsherpa.app",
+                "app_store_id": "6773212200"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

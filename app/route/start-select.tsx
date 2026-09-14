@@ -58,7 +58,7 @@ export default function StartSelectScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
+    <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <ScreenHeader title="현재 위치 선택" subtitle="가까운 기준점을 골라주세요" />
 
       <View style={styles.group}>

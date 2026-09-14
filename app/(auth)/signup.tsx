@@ -53,7 +53,7 @@ export default function SignupScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
+    <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <ScreenHeader title="회원가입" />
       <ScrollView contentContainerStyle={styles.scroll}>
         <Text style={styles.heading}>회원가입 방법 선택</Text>

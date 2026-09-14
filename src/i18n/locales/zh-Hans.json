@@ -1,0 +1,111 @@
+{
+  "language": {
+    "ko": "한국어",
+    "en": "English",
+    "zh-Hans": "简体中文",
+    "ja": "日本語"
+  },
+  "common": {
+    "confirm": "确认",
+    "cancel": "取消",
+    "save": "保存",
+    "delete": "删除",
+    "close": "关闭",
+    "loading": "加载中...",
+    "retry": "重试",
+    "back": "返回"
+  },
+  "auth": {
+    "selectLanguage": "选择语言",
+    "selectLanguageDesc": "请选择应用使用的语言。",
+    "signIn": "登录",
+    "signUp": "注册",
+    "email": "电子邮件",
+    "password": "密码",
+    "googleSignIn": "使用 Google 继续",
+    "appleSignIn": "使用 Apple 继续",
+    "logout": "退出登录",
+    "selectRole": "选择账户类型",
+    "selectRoleDesc": "请选择您的账户类型。",
+    "visitor": "访客",
+    "visitorTitle": "访客注册",
+    "visitorDesc": "为前往东大门综合市场的\n顾客提供的注册。",
+    "merchant": "店主",
+    "merchantTitle": "店主注册",
+    "merchantDesc": "为东大门综合市场内\n经营店铺的店主提供的注册。",
+    "alreadyHaveAccount": "已有账户?"
+  },
+  "pending": {
+    "inProgress": "店铺认证审核中",
+    "approved": "店铺认证完成",
+    "rejected": "店铺认证被拒绝",
+    "approvedDesc": "您现在可以使用所有店主功能。",
+    "inProgressDesc": "运营人员正在确认您的店铺信息。",
+    "applicationId": "申请编号",
+    "refresh": "刷新认证状态",
+    "askAdmin": "联系运营",
+    "retry": "重新申请"
+  },
+  "parts": {
+    "tabFind": "找辅料",
+    "tabSupply": "供应辅料",
+    "myField": "我的领域",
+    "all": "全部",
+    "newRequest": "+ 新建请求",
+    "empty": "暂无请求"
+  },
+  "shop": {
+    "operatingStatus": "营业状态",
+    "open": "营业中",
+    "lunch": "午休",
+    "away": "暂离",
+    "closed": "休业",
+    "paymentMethods": "支付方式"
+  },
+  "home": {
+    "greet": "您要找什么?",
+    "searchPlaceholder": "例如:店名、面料、洗手间、A3156",
+    "favorites": "收藏店铺",
+    "quickAccess": "快速进入"
+  },
+  "search": {
+    "title": "查找店铺",
+    "searchPlaceholder": "名称、商品、铺号或电话"
+  },
+  "store": {
+    "verifiedBadge": "认证店铺",
+    "viewOnMap": "查看位置",
+    "viewReviews": "查看评价",
+    "chatWithOwner": "联系店主",
+    "registerFavorite": "加入收藏",
+    "removeFavorite": "取消收藏"
+  },
+  "chat": {
+    "translate": "翻译为{{lang}}",
+    "showOriginal": "查看原文",
+    "originalLabel": "原文 ({{lang}})",
+    "messagePlaceholder": "输入消息",
+    "sendImage": "图片",
+    "sendVideo": "视频",
+    "emptyChat": "开始对话吧。",
+    "tapToPlay": "点击播放"
+  },
+  "qr": {
+    "myQr": "我的 QR",
+    "myShopQr": "店铺 QR",
+    "scan": "扫描 QR",
+    "scanHint": "请将 QR 码对准框内",
+    "permissionRequired": "需要相机权限。",
+    "grantPermission": "允许权限"
+  },
+  "tabs": {
+    "home": "首页",
+    "map": "地图",
+    "search": "店铺",
+    "parts": "辅料",
+    "partsSupply": "供应",
+    "customers": "客户",
+    "messenger": "消息",
+    "account": "我的"
+  }
+}

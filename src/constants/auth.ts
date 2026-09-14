@@ -10,5 +10,6 @@
 export const GOOGLE_WEB_CLIENT_ID =
   '387030473505-j6u3q7b7cekjfgh4oqjevbvusocc59rp.apps.googleusercontent.com';
 
-export const GOOGLE_IOS_CLIENT_ID: string | undefined = undefined;
+export const GOOGLE_IOS_CLIENT_ID: string | undefined =
+  '387030473505-3flrftq1bid8ka63t4i2fj06jc96h5ha.apps.googleusercontent.com';
 export const GOOGLE_ANDROID_CLIENT_ID: string | undefined = undefined;

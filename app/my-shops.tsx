@@ -9,15 +9,15 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Check, Clock, Phone } from 'lucide-react-native';
 import { Button } from '@/components/common/Button';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { Colors } from '@/constants/colors';
 import { useAuthStore } from '@/stores/authStore';
 import { subscribeMyShops, deleteShop } from '@/lib/shops';
 import { getStoreByCode } from '@/data/stores';
-import { showInfoAlert } from '@/utils/alerts';
+import { showInfoAlert, showConfirmAlert } from '@/utils/alerts';
 import { Shop } from '@/types';
-import { Platform, Alert } from 'react-native';
 
 export default function MyShopsScreen() {
   const user = useAuthStore((s) => s.user);
@@ -49,16 +49,10 @@ export default function MyShopsScreen() {
   const confirmDelete = (shop: Shop) => {
     const title = '매장 삭제';
     const msg = `"${shop.displayName || '이름 없음'}" 매장 정보를 삭제할까요?\n방문자에게 노출되던 사장님 등록 정보가 사라집니다.`;
-    if (Platform.OS === 'web') {
-      if (typeof window !== 'undefined' && window.confirm(`${title}\n\n${msg}`)) {
-        doDelete(shop);
-      }
-    } else {
-      Alert.alert(title, msg, [
-        { text: '취소', style: 'cancel' },
-        { text: '삭제', style: 'destructive', onPress: () => doDelete(shop) },
-      ]);
-    }
+    showConfirmAlert(title, msg, () => doDelete(shop), {
+      confirmLabel: '삭제',
+      destructive: true,
+    });
   };
 
   const doDelete = async (shop: Shop) => {
@@ -74,7 +68,7 @@ export default function MyShopsScreen() {
 
   if (!isMerchant) {
     return (
-      <SafeAreaView style={styles.safe} edges={['top']}>
+      <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
         <ScreenHeader title="내 매장 관리" />
         <View style={styles.center}><Text style={styles.muted}>접근 권한이 없습니다.</Text></View>
       </SafeAreaView>
@@ -82,7 +76,7 @@ export default function MyShopsScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
+    <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <ScreenHeader title="내 매장 관리" />
       <ScrollView contentContainerStyle={styles.scroll}>
         <Text style={styles.headerNote}>
@@ -95,8 +89,17 @@ export default function MyShopsScreen() {
         <Button
           label="+ 내 매장 검색해서 매칭하기"
           onPress={() => router.push('/my-shop-edit')}
+          style={{ marginBottom: 10 }}
+        />
+        <Button
+          label="+ 신규 매장 등록 신청"
+          variant="secondary"
+          onPress={() => router.push({ pathname: '/my-shop-edit', params: { new: '1' } })}
           style={{ marginBottom: 16 }}
         />
+        <Text style={styles.newHint}>
+          디렉터리에서 검색해도 안 나오는 신규/누락 매장이라면 [신규 매장 등록 신청] 으로 직접 등록해 주세요.
+        </Text>
 
         {loading ? (
           <View style={styles.center}>
@@ -144,9 +147,16 @@ function ShopCard({
         <Text style={styles.cardName} numberOfLines={2}>
           {shop.displayName || '(매장 이름 없음)'}
         </Text>
-        <View style={styles.verifiedBadge}>
-          <Text style={styles.verifiedText}>✓ 인증</Text>
-        </View>
+        {shop.verified === true ? (
+          <View style={styles.verifiedBadge}>
+            <Check size={11} color="#1B7A3E" strokeWidth={3} />
+            <Text style={styles.verifiedText}>인증</Text>
+          </View>
+        ) : (
+          <View style={styles.pendingBadge}>
+            <Text style={styles.pendingText}>운영자 확인 대기중</Text>
+          </View>
+        )}
       </View>
 
       {/* 호수 리스트 */}
@@ -167,10 +177,16 @@ function ShopCard({
       {(shop.phone || shop.businessHours) && (
         <View style={styles.metaWrap}>
           {shop.phone && (
-            <Text style={styles.metaLine}>📞 {shop.phone}</Text>
+            <View style={styles.metaRow}>
+              <Phone size={13} color={Colors.textMuted} strokeWidth={2} />
+              <Text style={styles.metaLine}>{shop.phone}</Text>
+            </View>
           )}
           {shop.businessHours && (
-            <Text style={styles.metaLine}>⏰ {shop.businessHours}</Text>
+            <View style={styles.metaRow}>
+              <Clock size={13} color={Colors.textMuted} strokeWidth={2} />
+              <Text style={styles.metaLine}>{shop.businessHours}</Text>
+            </View>
           )}
         </View>
       )}
@@ -207,6 +223,14 @@ const styles = StyleSheet.create({
   emptyIcon: { fontSize: 48, marginBottom: 12 },
   emptyTitle: { fontSize: 16, fontWeight: '800', color: Colors.text, marginBottom: 6 },
   emptyDesc: { fontSize: 13, color: Colors.textMuted, textAlign: 'center', lineHeight: 19 },
+  newHint: {
+    fontSize: 11,
+    color: Colors.textMuted,
+    textAlign: 'center',
+    marginBottom: 16,
+    paddingHorizontal: 8,
+    lineHeight: 16,
+  },
   card: {
     padding: 16,
     borderRadius: 12,
@@ -218,7 +242,9 @@ const styles = StyleSheet.create({
   },
   cardHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   cardName: { flex: 1, fontSize: 17, fontWeight: '800', color: Colors.text },
-  verifiedBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, backgroundColor: '#E0F2E9' },
+  verifiedBadge: { flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, backgroundColor: '#E0F2E9' },
+  pendingBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, backgroundColor: '#FFF3D6' },
+  pendingText: { fontSize: 10, fontWeight: '800', color: '#A66A00' },
   verifiedText: { fontSize: 11, fontWeight: '800', color: '#1B7A3E' },
   codesWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   codeChip: {
@@ -229,6 +255,7 @@ const styles = StyleSheet.create({
   },
   codeChipText: { fontSize: 12, fontWeight: '700', color: Colors.text },
   metaWrap: { gap: 4 },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   metaLine: { fontSize: 13, color: Colors.text },
   descLine: { fontSize: 13, color: Colors.textMuted, lineHeight: 19 },
   actions: { flexDirection: 'row', gap: 8, marginTop: 4 },

@@ -8,7 +8,8 @@
 - Zustand (상태 관리)
 - react-native-svg (지도 렌더링)
 - AsyncStorage (최근 검색·로그인 상태)
-- Firebase Authentication **예정** — 현재는 교체 가능한 mock 인증 사용
+- Firebase Authentication + Firestore + Storage (인증·리뷰·포토 메모)
+- expo-image-picker / expo-image-manipulator (포토 메모 촬영·리사이즈)
 
 ## 2. 설치 및 실행
 
@@ -80,6 +81,10 @@ assets/
 | 지도 | A/B/C/N 4개 동 + B1F~9F 층 전환, 세부 지도(6F) / 자동 스텁(나머지) |
 | 검색 | 호수 번호(215, 215호), 카테고리(원단/부자재…), 시설(화장실/ATM…), 점포명(공차/뉴욕버거…) |
 | 길찾기 | 수동 출발지 선택 → Dijkstra 경로 계산 → 지도 위 경로선 + 단계별 문장 안내 |
+| 단골매장 | 호수별 ❤️ 등록·해제 (로컬 AsyncStorage) — 프리미엄 게이트 |
+| 메모 | 호수별 자유 텍스트 메모 (로컬 AsyncStorage) — 프리미엄 게이트 |
+| 포토 메모 | 호수별 사진 업로드 + 캡션 (Firebase Storage + Firestore) — 업체당 10장, 프리미엄 게이트 |
+| 리뷰 | 호수별 별점(1~5) + 텍스트 리뷰, 1인 1리뷰 수정 가능, 평균 별점 표시 (Firestore) — 무료 |
 
 ## 5. 지도 데이터 확장 가이드
 
@@ -95,18 +100,49 @@ assets/
 
 ## 6. Firebase 연결 (현재 상태)
 
-**이메일/비밀번호 인증 + Firestore 프로필**이 연결되어 있습니다 (`firebase` JS SDK v12).
+**이메일/비밀번호 인증 + Firestore + Storage** 가 연결되어 있습니다 (`firebase` JS SDK v10).
 
-- 초기화: `src/lib/firebase.ts` (config + AsyncStorage 영구 저장)
+- 초기화: `src/lib/firebase.ts` (config + AsyncStorage 영구 저장, `auth` / `db` / `storage` 익스포트)
 - 인증: `src/lib/auth/firebaseAuth.ts`
-- 데이터 모델: `users/{uid} = { email, displayName, role, status, createdAt, approvedAt }`
+- 데이터 모델
+  - `users/{uid} = { email, displayName, role, status, createdAt, approvedAt }`
+  - `users/{uid}/meta/entitlement = { plan, expiresAt, grandfathered, source }` — 프리미엄 권한
+  - `users/{uid}/photoMemos/{shopCode}/photos/{photoId}` — 포토 메모 메타
+  - `shops/{shopId}` — 사장님이 등록한 매장 overlay
+  - `reviews/{shopCode} = { ratingSum, ratingCount }` — 리뷰 집계
+  - `reviews/{shopCode}/entries/{uid}` — 개별 리뷰 (1인 1리뷰)
 - 사장님 가입은 `status: 'pending'`으로 생성 → 어드민이 Firebase Console에서 `'active'`로 변경
 
+### 6-1. 보안 규칙 배포
+
+`firestore.rules` 와 `storage.rules` 파일이 저장소 루트에 있습니다. Firebase CLI 로 배포:
+
+```bash
+npm install -g firebase-tools
+firebase login
+firebase init firestore   # 처음만 (firestore.rules 를 기존 파일로 선택)
+firebase init storage     # 처음만
+firebase deploy --only firestore:rules
+firebase deploy --only storage
+```
+
+`firebase.json` 이 없다면 init 단계에서 자동 생성됩니다. 출시 전 반드시 배포할 것 — 현재 Firebase 콘솔의 테스트 모드 규칙은 30일 후 만료됨.
+
+### 6-2. 프리미엄 / 유료화 모델
+
+`src/hooks/useEntitlement.ts` 가 `isPremium` 을 노출합니다. 현재는 `src/lib/entitlement.ts` 의 `isActivePremium()` 이 항상 `true` 를 반환 → **모든 사용자에게 프리미엄 기능 개방**. 유료화 시점에 다음 두 가지를 변경:
+
+1. `isActivePremium()` 의 마지막 `return true;` 라인을 `return false;` 로 교체 (free 사용자는 게이트 작동)
+2. `PREMIUM_LAUNCH_EPOCH_MS` 를 출시 시점 ms 로 설정 → 그 이전 가입자는 `grandfathered: true` 로 자동 부여
+
+결제 연동은 RevenueCat 권장 (`react-native-purchases`). Cloud Function webhook 으로 `users/{uid}/meta/entitlement` 갱신.
+
 추가 작업 예정:
-1. Firestore 보안 규칙 적용 (현재 테스트 모드, 30일 후 만료)
-2. Google 로그인 (`expo-auth-session` + Firebase credential)
-3. Apple 로그인 (`expo-apple-authentication`, iOS 빌드 시)
-4. 카카오 로그인 (Cloud Functions로 Custom Token 발급)
+1. Google 로그인 (`expo-auth-session` + Firebase credential)
+2. Apple 로그인 (`expo-apple-authentication`, iOS 빌드 시)
+3. 카카오 로그인 (Cloud Functions로 Custom Token 발급)
+4. 리뷰 신고/숨김, 사장님 답글 (v2)
+5. RevenueCat 연동 + 페이월 UI
 
 ## 7. 빌드
 

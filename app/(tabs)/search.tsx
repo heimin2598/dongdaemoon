@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   FlatList,
+  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -10,12 +11,19 @@ import {
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { ChevronLeft, ChevronRight, Heart, Search as SearchIcon, X } from 'lucide-react-native';
 import { Colors, BuildingColors } from '@/constants/colors';
-import { searchStores, getStoresByCategory, getStoresBySubCategory, CATEGORY_TREE, countStores, parseKeywordTags } from '@/data/stores';
+import { searchStores, getStoresByCategory, getStoresBySubCategory, getStoreByCode, CATEGORY_TREE, countStores, parseKeywordTags } from '@/data/stores';
 import { MAIN_CATEGORIES, MAIN_CATEGORY_COLOR, MAIN_CATEGORY_EMOJI, MainCategory, Store } from '@/data/stores/types';
+import { subscribeAllShops } from '@/lib/shops';
+import type { Shop } from '@/types';
 import { FLOOR_LABEL } from '@/constants/floors';
 import { useFavoritesStore } from '@/stores/favoritesStore';
 import { useSearchStore } from '@/stores/searchStore';
+import { HomeBanner, subscribeActiveBanners } from '@/lib/homeBanners';
+import { subscribeBannerSettings } from '@/lib/bannerSettings';
+import { HomeBannerCarousel } from '@/components/common/HomeBannerCarousel';
+import { AdBanner } from '@/components/common/AdBanner';
 
 type Mode = 'all' | 'category';
 
@@ -38,20 +46,82 @@ export default function SearchTab() {
 
   const total = useMemo(() => countStores(), []);
 
+  // shops 컬렉션 (사장님이 등록한 매장) 실시간 구독 — 디렉터리에 없는 신규 매장 검색용
+  const [allShops, setAllShops] = useState<Shop[]>([]);
+  useEffect(() => {
+    const unsub = subscribeAllShops(setAllShops);
+    return () => unsub();
+  }, []);
+
+  // 신규 매장 (디렉터리에 없는 storeCode 만 가진 shop) → 가상 Store 로 변환
+  const newShopStores = useMemo<Store[]>(() => {
+    const q = query.trim().toLowerCase();
+    return allShops
+      .filter((s) => s.storeCodes.length > 0 && !s.storeCodes.some((c) => getStoreByCode(c)))
+      .filter((s) => {
+        if (!q) return true;
+        const hay = `${s.displayName ?? ''} ${s.phone ?? ''} ${s.storeCodes.join(' ')} ${s.description ?? ''}`.toLowerCase();
+        return hay.includes(q);
+      })
+      .map<Store>((s) => ({
+        id: -1,
+        code: s.storeCodes[0],
+        name: s.displayName || '매장',
+        category: '기타',
+        subCategory: null,
+        building: null,
+        floor: null,
+        unit: null,
+        location: null,
+        phone: s.phone || null,
+        keywords: '',
+        description: s.description || '',
+        images: (s.photos ?? []).map((p) => p.url),
+        sourceUrl: null,
+      }));
+  }, [allShops, query]);
+
   const storeResults = useMemo<Store[]>(() => {
-    if (query.trim()) return searchStores(query, 100);
+    if (query.trim()) {
+      const dir = searchStores(query, 100);
+      // 신규 매장은 결과 상단에 노출 (최신성)
+      return [...newShopStores, ...dir];
+    }
     if (activeSub) return getStoresBySubCategory(activeSub);
     if (activeCat) return getStoresByCategory(activeCat);
     return [];
-  }, [query, activeCat, activeSub]);
+  }, [query, activeCat, activeSub, newShopStores]);
 
   const hasActiveFilter = !!query.trim() || !!activeCat || !!activeSub;
+
+  // 매장 광고 배너 — homeBanners 와 별개의 searchBanners 컬렉션 구독
+  const [searchBanners, setSearchBanners] = useState<HomeBanner[]>([]);
+  const [searchShuffle, setSearchShuffle] = useState(false);
+  useEffect(() => {
+    const unsub = subscribeActiveBanners('search', setSearchBanners);
+    return () => unsub();
+  }, []);
+  useEffect(() => {
+    const unsub = subscribeBannerSettings('search', (s) =>
+      setSearchShuffle(s.displayMode === 'random'),
+    );
+    return () => unsub();
+  }, []);
+
+  const openBannerLink = (url: string) => {
+    if (!url) return;
+    if (/^https?:\/\//i.test(url)) {
+      Linking.openURL(url).catch(() => {});
+    } else {
+      router.push(url as any);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.searchWrap}>
         <View style={styles.searchBar}>
-          <Text style={styles.searchIcon}>🔍</Text>
+          <SearchIcon size={20} color={Colors.textMuted} strokeWidth={2} style={{ marginRight: 8 }} />
           <TextInput
             value={query}
             onChangeText={(t) => { setQuery(t); setMode('all'); }}
@@ -62,8 +132,8 @@ export default function SearchTab() {
             onSubmitEditing={() => pushQuery(query)}
           />
           {query.length > 0 && (
-            <Pressable onPress={() => setQuery('')}>
-              <Text style={styles.clearIcon}>×</Text>
+            <Pressable onPress={() => setQuery('')} hitSlop={10}>
+              <X size={18} color={Colors.textMuted} strokeWidth={2} />
             </Pressable>
           )}
         </View>
@@ -82,6 +152,11 @@ export default function SearchTab() {
         >
           <Text style={[styles.modeTabText, mode === 'category' && styles.modeTabTextActive]}>카테고리</Text>
         </Pressable>
+      </View>
+
+      {/* AdMob 광고 배너 — 모드 탭 바로 아래에 항상 노출 (프리미엄은 자동 hidden) */}
+      <View style={styles.searchBannerWrap}>
+        <AdBanner />
       </View>
 
       {mode === 'category' && !activeCat && (
@@ -112,7 +187,7 @@ export default function SearchTab() {
         <View style={{ flex: 1 }}>
           <View style={styles.catHeader}>
             <Pressable onPress={() => { setActiveCat(null); setActiveSub(null); }} hitSlop={10}>
-              <Text style={styles.backChevron}>‹</Text>
+              <ChevronLeft size={26} color={Colors.text} strokeWidth={2} />
             </Pressable>
             <Text style={styles.catHeaderTitle}>
               {MAIN_CATEGORY_EMOJI[activeCat]} {activeCat}
@@ -218,10 +293,10 @@ function StoreList({ stores }: { stores: Store[] }) {
               </Text>
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.rowName} numberOfLines={2}>
-                {s.name}
-                {isFav ? <Text style={styles.favHeart}> ❤️</Text> : null}
-              </Text>
+              <View style={styles.nameRow}>
+                <Text style={styles.rowName} numberOfLines={2}>{s.name}</Text>
+                {isFav && <Heart size={14} color="#E63946" fill="#E63946" strokeWidth={2} />}
+              </View>
               <View style={styles.tagRow}>
                 <View style={[styles.catTag, { backgroundColor: catColor + '22', borderColor: catColor }]}>
                   <Text style={[styles.catTagText, { color: catColor }]}>{s.category}</Text>
@@ -243,7 +318,7 @@ function StoreList({ stores }: { stores: Store[] }) {
                 )}
               </View>
             </View>
-            <Text style={styles.arrow}>›</Text>
+            <ChevronRight size={20} color={Colors.textMuted} />
           </Pressable>
         );
       }}
@@ -273,7 +348,8 @@ const styles = StyleSheet.create({
   modeTabText: { fontSize: 14, fontWeight: '700', color: Colors.text },
   modeTabTextActive: { color: Colors.textInverse },
   hint: { fontSize: 12, color: Colors.textMuted, fontWeight: '700', marginBottom: 10 },
-  categoryGrid: { padding: 16 },
+  categoryGrid: { padding: 16, paddingBottom: 32 },
+  searchBannerWrap: { paddingVertical: 14, backgroundColor: Colors.background },
   catCards: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   catCard: {
     width: '48%',
@@ -314,7 +390,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   locText: { fontSize: 14, fontWeight: '600', letterSpacing: -0.2 },
-  rowName: { fontSize: 17, fontWeight: '800', color: Colors.text, lineHeight: 22 },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  rowName: { flex: 1, fontSize: 17, fontWeight: '800', color: Colors.text, lineHeight: 22 },
   favHeart: { fontSize: 14 },
   tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 6 },
   catTag: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10, borderWidth: 1 },

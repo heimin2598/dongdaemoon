@@ -1,0 +1,18 @@
+# Tell EAS Build to prebuild from scratch — ignore local native folders.
+# Local android/ has custom signingConfig for local AAB builds; EAS uses its own keystore.
+android/
+ios/
+
+# Large local artifacts — speed up upload
+*.aab
+*.apk
+*.ipa
+reviews/
+/tmp/
+.expo/
+node_modules/
+
+# 앱 빌드와 무관한 홍보 사이트 — 21MB 번들 업로드 방지
+heiminstudio-site/
+docs/
+dist-web/

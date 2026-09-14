@@ -1,9 +1,11 @@
 import React, { useMemo, useRef } from 'react';
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
+import { ChevronLeft, RotateCw } from 'lucide-react-native';
 import { MapCanvas } from '@/components/map/MapCanvas';
 import { ImageOverlayMap } from '@/components/map/ImageOverlayMap';
-import { ZoomableMap, ZoomableMapHandle } from '@/components/map/ZoomableMap';
+import { SimpleZoomableMap as ZoomableMap, SimpleZoomableMapHandle as ZoomableMapHandle } from '@/components/map/SimpleZoomableMap';
 import { MapControls } from '@/components/map/MapControls';
 import { LandscapeLock } from '@/components/common/LandscapeLock';
 import { useMapStore } from '@/stores/mapStore';
@@ -25,6 +27,7 @@ export default function MapFullscreenScreen() {
   const orientation = useMapStore((s) => s.orientation);
   const setOrientation = useMapStore((s) => s.setOrientation);
   const isLandscape = orientation === 'landscape';
+  const insets = useSafeAreaInsets();
 
   const zoomRef = useRef<ZoomableMapHandle>(null);
   const hotspots = useMemo(() => getHotspots(floor), [floor]);
@@ -45,7 +48,7 @@ export default function MapFullscreenScreen() {
     <View style={simulatePortrait ? styles.portraitFrame : styles.landscapeFrame}>
     <LandscapeLock enabled={orientation === 'landscape'}>
     <View style={styles.fullscreen}>
-      <ZoomableMap ref={zoomRef} minScale={0.3} maxScale={10}>
+      <ZoomableMap ref={zoomRef} minScale={0.3} maxScale={10} landscape={isLandscape}>
         {showOverlay && canHybrid ? (
           <ImageOverlayMap
             image={image!}
@@ -68,26 +71,33 @@ export default function MapFullscreenScreen() {
       </ZoomableMap>
 
       {/* 좌측 상단: 뒤로가기 (가로모드일 때 옆에 세로로 보기 토글 함께 표시) */}
-      <View style={styles.topLeftRow}>
+      <View style={[styles.topLeftRow, { top: 14 + insets.top, left: 14 + insets.left }]}>
         <Pressable
           style={styles.backBtn}
           onPress={() => (router.canGoBack() ? router.back() : router.replace('/map-building'))}
         >
-          <Text style={styles.backText}>‹ 뒤로</Text>
+          <ChevronLeft size={20} color={Colors.text} strokeWidth={2} />
+          <Text style={styles.backText}>뒤로</Text>
         </Pressable>
         {isLandscape && (
           <Pressable
             style={styles.orientToggleBtn}
             onPress={() => setOrientation('portrait')}
           >
-            <Text style={styles.orientToggleIcon}>⟲</Text>
+            <RotateCw size={14} color={Colors.text} strokeWidth={2} />
             <Text style={styles.orientToggleText}>세로로 보기</Text>
           </Pressable>
         )}
       </View>
 
       {/* 우측 상단: 동·층 뱃지 */}
-      <View style={[styles.badge, { backgroundColor: color.primary }]} pointerEvents="none">
+      <View
+        style={[
+          styles.badge,
+          { backgroundColor: color.primary, top: 14 + insets.top, right: 14 + insets.right },
+        ]}
+        pointerEvents="none"
+      >
         <Text style={[styles.badgeText, { color: color.text }]}>
           {showOverlay ? '전체' : `${building}동`} · {FLOOR_LABEL[floor]}
         </Text>
@@ -95,7 +105,7 @@ export default function MapFullscreenScreen() {
 
       {/* 하단 중앙 (세로모드 전체보기일 때만): 가로로 보기 토글 */}
       {!isLandscape && (
-        <View style={styles.bottomCenter} pointerEvents="box-none">
+        <View style={[styles.bottomCenter, { bottom: 12 + insets.bottom }]} pointerEvents="box-none">
           <Pressable
             style={styles.orientToggleBtn}
             onPress={() => setOrientation('landscape')}

@@ -1,0 +1,111 @@
+{
+  "language": {
+    "ko": "한국어",
+    "en": "English",
+    "zh-Hans": "简体中文",
+    "ja": "日本語"
+  },
+  "common": {
+    "confirm": "OK",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "close": "Close",
+    "loading": "Loading...",
+    "retry": "Retry",
+    "back": "Back"
+  },
+  "auth": {
+    "selectLanguage": "Choose Language",
+    "selectLanguageDesc": "Please choose the language for the app.",
+    "signIn": "Sign In",
+    "signUp": "Sign Up",
+    "email": "Email",
+    "password": "Password",
+    "googleSignIn": "Continue with Google",
+    "appleSignIn": "Continue with Apple",
+    "logout": "Log Out",
+    "selectRole": "Choose Account Type",
+    "selectRoleDesc": "Please choose your account type.",
+    "visitor": "Visitor",
+    "visitorTitle": "Visitor Sign Up",
+    "visitorDesc": "For shoppers visiting\nDongdaemun General Market.",
+    "merchant": "Shop Owner",
+    "merchantTitle": "Shop Owner Sign Up",
+    "merchantDesc": "For owners of shops inside\nDongdaemun General Market.",
+    "alreadyHaveAccount": "Already have an account?"
+  },
+  "pending": {
+    "inProgress": "Shop verification in progress",
+    "approved": "Shop verified",
+    "rejected": "Shop verification rejected",
+    "approvedDesc": "You can now use all shop owner features.",
+    "inProgressDesc": "Our team is reviewing your shop information.",
+    "applicationId": "Application ID",
+    "refresh": "Refresh status",
+    "askAdmin": "Contact support",
+    "retry": "Apply again"
+  },
+  "parts": {
+    "tabFind": "Find Parts",
+    "tabSupply": "Parts Supply",
+    "myField": "My field",
+    "all": "All",
+    "newRequest": "+ New request",
+    "empty": "No requests yet"
+  },
+  "shop": {
+    "operatingStatus": "Status",
+    "open": "Open",
+    "lunch": "Lunch",
+    "away": "Away",
+    "closed": "Closed",
+    "paymentMethods": "Payments"
+  },
+  "home": {
+    "greet": "What are you looking for?",
+    "searchPlaceholder": "e.g. shop name, fabric, restroom, A3156",
+    "favorites": "Favorites",
+    "quickAccess": "Quick Access"
+  },
+  "search": {
+    "title": "Find a Shop",
+    "searchPlaceholder": "Name, item, unit, or phone"
+  },
+  "store": {
+    "verifiedBadge": "Verified",
+    "viewOnMap": "View on Map",
+    "viewReviews": "Reviews",
+    "chatWithOwner": "Message the Shop",
+    "registerFavorite": "Save to Favorites",
+    "removeFavorite": "Remove Favorite"
+  },
+  "chat": {
+    "translate": "Translate to {{lang}}",
+    "showOriginal": "Show original",
+    "originalLabel": "Original ({{lang}})",
+    "messagePlaceholder": "Type a message",
+    "sendImage": "Photo",
+    "sendVideo": "Video",
+    "emptyChat": "Start a conversation.",
+    "tapToPlay": "Tap to play"
+  },
+  "qr": {
+    "myQr": "My QR",
+    "myShopQr": "My Shop QR",
+    "scan": "Scan QR",
+    "scanHint": "Align the QR code inside the frame",
+    "permissionRequired": "Camera permission required.",
+    "grantPermission": "Grant Permission"
+  },
+  "tabs": {
+    "home": "Home",
+    "map": "Map",
+    "search": "Shops",
+    "parts": "Parts",
+    "partsSupply": "Supply",
+    "customers": "Customers",
+    "messenger": "Chats",
+    "account": "MY"
+  }
+}

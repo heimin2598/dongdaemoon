@@ -1,0 +1,111 @@
+{
+  "language": {
+    "ko": "한국어",
+    "en": "English",
+    "zh-Hans": "简体中文",
+    "ja": "日本語"
+  },
+  "common": {
+    "confirm": "OK",
+    "cancel": "キャンセル",
+    "save": "保存",
+    "delete": "削除",
+    "close": "閉じる",
+    "loading": "読み込み中...",
+    "retry": "再試行",
+    "back": "戻る"
+  },
+  "auth": {
+    "selectLanguage": "言語を選択",
+    "selectLanguageDesc": "アプリで使用する言語を選択してください。",
+    "signIn": "ログイン",
+    "signUp": "新規登録",
+    "email": "メール",
+    "password": "パスワード",
+    "googleSignIn": "Google で続行",
+    "appleSignIn": "Apple で続行",
+    "logout": "ログアウト",
+    "selectRole": "アカウント種別を選択",
+    "selectRoleDesc": "アカウントの種別を選択してください。",
+    "visitor": "来訪者",
+    "visitorTitle": "来訪者の登録",
+    "visitorDesc": "東大門総合市場に来訪される\nお客様向けの登録です。",
+    "merchant": "店主",
+    "merchantTitle": "店主の登録",
+    "merchantDesc": "東大門総合市場で店舗を\n営業されている店主様向けの登録です。",
+    "alreadyHaveAccount": "すでにアカウントをお持ちですか?"
+  },
+  "pending": {
+    "inProgress": "店舗認証を確認中です",
+    "approved": "店舗認証が完了しました",
+    "rejected": "店舗認証が却下されました",
+    "approvedDesc": "店主向けのすべての機能をご利用いただけます。",
+    "inProgressDesc": "運営が申請いただいた店舗情報を確認しています。",
+    "applicationId": "申請 ID",
+    "refresh": "認証状態を更新",
+    "askAdmin": "運営に問い合わせる",
+    "retry": "再申請する"
+  },
+  "parts": {
+    "tabFind": "副資材検索",
+    "tabSupply": "副資材供給",
+    "myField": "マイ分野",
+    "all": "すべて",
+    "newRequest": "+ 新規リクエスト",
+    "empty": "リクエストはまだありません"
+  },
+  "shop": {
+    "operatingStatus": "営業状態",
+    "open": "営業中",
+    "lunch": "昼休み",
+    "away": "一時離席",
+    "closed": "休業",
+    "paymentMethods": "決済方法"
+  },
+  "home": {
+    "greet": "何をお探しですか?",
+    "searchPlaceholder": "例: 店名、生地、トイレ、A3156",
+    "favorites": "お気に入り店舗",
+    "quickAccess": "クイックアクセス"
+  },
+  "search": {
+    "title": "店舗検索",
+    "searchPlaceholder": "店名・商品・号数・電話番号"
+  },
+  "store": {
+    "verifiedBadge": "認証店舗",
+    "viewOnMap": "地図で見る",
+    "viewReviews": "レビュー",
+    "chatWithOwner": "店主にメッセージ",
+    "registerFavorite": "お気に入りに追加",
+    "removeFavorite": "お気に入りから削除"
+  },
+  "chat": {
+    "translate": "{{lang}}に翻訳",
+    "showOriginal": "原文を見る",
+    "originalLabel": "原文 ({{lang}})",
+    "messagePlaceholder": "メッセージを入力",
+    "sendImage": "写真",
+    "sendVideo": "動画",
+    "emptyChat": "会話を始めましょう。",
+    "tapToPlay": "タップで再生"
+  },
+  "qr": {
+    "myQr": "マイ QR",
+    "myShopQr": "店舗 QR",
+    "scan": "QR スキャン",
+    "scanHint": "QR コードを枠内に合わせてください",
+    "permissionRequired": "カメラの権限が必要です。",
+    "grantPermission": "権限を許可"
+  },
+  "tabs": {
+    "home": "ホーム",
+    "map": "地図",
+    "search": "店舗",
+    "parts": "副資材",
+    "partsSupply": "供給",
+    "customers": "顧客",
+    "messenger": "メッセージ",
+    "account": "MY"
+  }
+}

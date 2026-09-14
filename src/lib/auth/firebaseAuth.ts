@@ -1,6 +1,7 @@
 import { Platform } from 'react-native';
 import {
   createUserWithEmailAndPassword,
+  deleteUser as fbDeleteUser,
   GoogleAuthProvider,
   OAuthProvider,
   signInWithCredential,
@@ -13,6 +14,7 @@ import {
 } from 'firebase/auth';
 import {
   collection,
+  deleteDoc,
   doc,
   FieldValue,
   getDoc,
@@ -28,6 +30,7 @@ import {
 } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import { User, UserRole, UserStatus } from '@/types';
+import { generateShortId } from '@/utils/shortId';
 
 /**
  * Firebase 기반 인증 라이브러리.
@@ -43,8 +46,11 @@ interface UserDoc {
   displayName?: string | null;
   role: UserRole;
   status: UserStatus;
+  shortId?: string;
   createdAt?: unknown;
   approvedAt?: unknown;
+  disabled?: boolean;
+  deletedAt?: unknown;
 }
 
 function inferProvider(fbUser: FbUser): User['provider'] {
@@ -62,6 +68,9 @@ function buildUser(fbUser: FbUser, profile: UserDoc): User {
     provider: inferProvider(fbUser),
     role: profile.role,
     status: profile.status,
+    shortId: profile.shortId,
+    disabled: !!profile.disabled,
+    deletedAt: (profile.deletedAt as { toMillis?: () => number })?.toMillis?.() ?? null,
   };
 }
 
@@ -76,16 +85,60 @@ async function createProfile(
   displayName?: string,
 ): Promise<UserDoc> {
   const status: UserStatus = role === 'merchant' ? 'pending' : 'active';
+  const shortId = generateShortId();
   const profile: UserDoc = {
     email: fbUser.email ?? '',
     displayName: displayName ?? fbUser.displayName ?? null,
     role,
     status,
+    shortId,
     createdAt: serverTimestamp(),
     approvedAt: null,
   };
   await setDoc(doc(db, 'users', fbUser.uid), profile);
+  await writeUserLookup(fbUser.uid, shortId, profile.displayName ?? null);
   return profile;
+}
+
+/** 외부에서 호출 가능 — 이미 로그인된 user 도 lookup 강제 보장 (idempotent). */
+export async function ensureUserLookup(
+  uid: string,
+  shortId: string | undefined,
+  displayName: string | null | undefined,
+): Promise<void> {
+  if (!shortId) return;
+  await writeUserLookup(uid, shortId, displayName ?? null);
+}
+
+/** userLookup/{shortId} — shortId → uid 공개 매핑. 사장님이 ID 로 고객 검색용. */
+async function writeUserLookup(uid: string, shortId: string, displayName: string | null): Promise<void> {
+  try {
+    await setDoc(doc(db, 'userLookup', shortId), {
+      uid,
+      shortId,
+      displayName,
+    });
+  } catch {
+    // best-effort — 검색 lookup 없어도 본 기능에는 영향 없음
+  }
+}
+
+/** 기존 회원이 shortId 가 없으면 lazy backfill. 로그인 직후 호출. */
+async function ensureShortId(uid: string, profile: UserDoc): Promise<UserDoc> {
+  if (profile.shortId) {
+    // 이미 shortId 있으면 lookup 도 보장 (이전 가입자 마이그레이션)
+    await writeUserLookup(uid, profile.shortId, profile.displayName ?? null);
+    return profile;
+  }
+  const shortId = generateShortId();
+  try {
+    await updateDoc(doc(db, 'users', uid), { shortId });
+    await writeUserLookup(uid, shortId, profile.displayName ?? null);
+  } catch {
+    // 권한/네트워크 이슈는 silent — 다음 기회에 다시 시도
+    return profile;
+  }
+  return { ...profile, shortId };
 }
 
 export async function signUpWithEmail(
@@ -109,6 +162,7 @@ export async function signInWithEmail(email: string, password: string): Promise<
   if (!profile) {
     profile = await createProfile(cred.user, 'visitor');
   }
+  profile = await ensureShortId(cred.user.uid, profile);
   return buildUser(cred.user, profile);
 }
 
@@ -141,6 +195,7 @@ export async function signInWithGoogle(
   if (!profile) {
     profile = await createProfile(credUser, role, credUser.displayName ?? undefined);
   }
+  profile = await ensureShortId(credUser.uid, profile);
   return buildUser(credUser, profile);
 }
 
@@ -177,6 +232,7 @@ export async function signInWithApple(
   if (!profile) {
     profile = await createProfile(credUser, role, credUser.displayName ?? undefined);
   }
+  profile = await ensureShortId(credUser.uid, profile);
   return buildUser(credUser, profile);
 }
 
@@ -188,13 +244,48 @@ export async function signOut(): Promise<void> {
   await fbSignOut(auth);
 }
 
+/**
+ * 회원 탈퇴 — Apple 정책 5.1.1(v) 필수 요구.
+ * 1) Firestore 의 users/{uid} doc + 하위 메타 (entitlement, pushToken) 삭제
+ * 2) userLookup doc (shortId 매핑) 삭제
+ * 3) Firebase Auth 계정 삭제 (영구)
+ *
+ * 주의: 재인증이 만료된 상태에서는 deleteUser 가 'auth/requires-recent-login' 으로 실패할 수 있다.
+ * 호출 측은 그 경우 사용자에게 다시 로그인 안내 후 재시도하도록 한다.
+ *
+ * 다음 데이터는 본 함수에서 자동 정리되지 않음 (별도 정책 또는 background job 처리):
+ *  - 차단 목록 하위 컬렉션, 메모/포토메모, 리뷰, 신고/문의 (운영자 모니터링 목적)
+ */
+export async function deleteAccount(): Promise<void> {
+  const fbUser = auth.currentUser;
+  if (!fbUser) throw new Error('로그인 상태가 아닙니다.');
+  const uid = fbUser.uid;
+  // Firestore 메타 doc 삭제 (실패해도 다음 단계 진행)
+  await deleteDoc(doc(db, 'users', uid, 'meta', 'entitlement')).catch(() => {});
+  await deleteDoc(doc(db, 'users', uid, 'meta', 'pushToken')).catch(() => {});
+  // userLookup (shortId 매핑) 정리
+  try {
+    const profile = await fetchProfile(uid);
+    if (profile?.shortId) {
+      await deleteDoc(doc(db, 'userLookups', profile.shortId)).catch(() => {});
+    }
+  } catch {
+    // ignore
+  }
+  // users/{uid} 메인 doc 삭제
+  await deleteDoc(doc(db, 'users', uid)).catch(() => {});
+  // Firebase Auth 계정 삭제 — 마지막 단계
+  await fbDeleteUser(fbUser);
+}
+
 export async function getCurrentUser(): Promise<User | null> {
   // Firebase Auth는 AsyncStorage에서 비동기로 hydrate됨 — 완료 대기
   await auth.authStateReady();
   const fbUser = auth.currentUser;
   if (!fbUser) return null;
-  const profile = await fetchProfile(fbUser.uid);
+  let profile = await fetchProfile(fbUser.uid);
   if (!profile) return null;
+  profile = await ensureShortId(fbUser.uid, profile);
   return buildUser(fbUser, profile);
 }
 
@@ -254,7 +345,9 @@ export async function listMerchants(filter?: UserStatus): Promise<MerchantSummar
 /** 특정 사용자 프로필을 실시간 구독. 반환값을 호출하면 구독 해제. */
 export function subscribeToProfile(
   uid: string,
-  cb: (user: { role: UserRole; status: UserStatus; email: string } | null) => void,
+  cb: (
+    user: { role: UserRole; status: UserStatus; email: string; disabled?: boolean } | null,
+  ) => void,
 ): Unsubscribe {
   return onSnapshot(doc(db, 'users', uid), (snap) => {
     if (!snap.exists()) {
@@ -262,7 +355,12 @@ export function subscribeToProfile(
       return;
     }
     const data = snap.data() as UserDoc;
-    cb({ role: data.role, status: data.status, email: data.email });
+    cb({
+      role: data.role,
+      status: data.status,
+      email: data.email,
+      disabled: !!data.disabled,
+    });
   });
 }
 

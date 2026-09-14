@@ -1,0 +1,460 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isMe(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    // 어드민 — admins/{uid} doc 존재 여부로 판정. Firebase 콘솔에서 추가/제거.
+    function isAdmin() {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    // ─────────────────────────────────────────────
+    // admins/{uid} : 어드민 멤버십
+    // 본인 doc 만 자기 권한 확인용으로 read 가능. 쓰기는 콘솔(Admin SDK)만.
+    // ─────────────────────────────────────────────
+    match /admins/{uid} {
+      allow read: if isMe(uid) || isAdmin();
+      allow write: if false;
+    }
+
+    // ─────────────────────────────────────────────
+    // users/{uid} : 본인 프로필
+    // ─────────────────────────────────────────────
+    match /users/{uid} {
+      // 본인 또는 어드민(매장 사장님 승인 관리 등)
+      allow read: if isMe(uid) || isAdmin();
+      // 회원가입 직후 본인 문서 생성 허용. 단 status / role 변조 차단.
+      allow create: if isMe(uid)
+        && request.resource.data.email is string
+        && request.resource.data.role in ['visitor', 'merchant'];
+      // 본인은 role/status/email/disabled 잠금 + 어드민은 자유롭게 변경 가능
+      allow update: if (
+        isMe(uid)
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.status == resource.data.status
+        && request.resource.data.email == resource.data.email
+        && (
+          !('disabled' in request.resource.data.keys())
+          || request.resource.data.disabled == (resource.data.disabled is bool ? resource.data.disabled : false)
+        )
+      ) || isAdmin();
+      // 운영자만 회원 doc 삭제 가능 (Auth 계정은 Firebase 콘솔에서 별도 삭제 필요)
+      allow delete: if isAdmin();
+
+      // ─── meta/pushToken : 푸시 알림 토큰.
+      // - 본인: read/write
+      // - 인증된 다른 사용자: read 허용 (채팅 fan-out 시 상대 토큰 조회용).
+      //   토큰은 opaque 식별자라 단독 정보가치 낮음. 향후 Cloud Functions 로 이관 시 read 차단 권장.
+      match /meta/pushToken {
+        allow read: if isSignedIn();
+        allow write: if isMe(uid);
+      }
+
+      // ─── meta/entitlement : 본인 읽기. 본인은 신규 free init 만 create 가능.
+      // 결제 상태 (premium) 로의 전환은 RevenueCat → Cloud Function webhook 이 admin 권한으로 처리.
+      // 자가 결제 우회 방지: 본인은 어떤 이유로도 premium 로 승격 불가.
+      match /meta/entitlement {
+        allow read: if isMe(uid) || isAdmin();
+
+        // CREATE — 신규 가입 init 만 허용
+        allow create: if (isMe(uid)
+          && (
+            // Case A: 신규 free init — ensureEntitlementDoc 의 free 사용자 진입로
+            (request.resource.data.plan == 'free'
+             && request.resource.data.source == 'free'
+             && request.resource.data.grandfathered == false
+             && request.resource.data.expiresAt == null)
+            // Case B: 신규 grandfathered init — 결제 출시 이전 가입자
+            || (request.resource.data.plan == 'premium'
+                && request.resource.data.source == 'manual'
+                && request.resource.data.grandfathered == true
+                && request.resource.data.expiresAt == null)
+          )
+        ) || isAdmin();
+
+        // UPDATE / DELETE — Cloud Function (admin) 만. 본인은 결제 상태를 직접 수정 불가.
+        allow update: if isAdmin();
+        allow delete: if isAdmin();
+      }
+
+      // ─── meta/promoAttempts : 사용자의 하루 프로모션 코드 시도 카운트.
+      // 본인만 read (남은 횟수 UI 노출용). 쓰기는 Cloud Function (admin) 만 — 자가 조작 방지.
+      match /meta/promoAttempts {
+        allow read: if isMe(uid);
+        allow write: if isAdmin();
+      }
+
+      // ─── photoMemos/{shopCode}/photos/{photoId}
+      match /photoMemos/{shopCode}/photos/{photoId} {
+        allow read, write: if isMe(uid);
+      }
+
+      // ─── blocked/{blockedUid} : 본인만 자신의 차단 목록 R/W (1:1, doc id == 차단 대상 uid)
+      match /blocked/{blockedUid} {
+        allow read, write: if isMe(uid);
+      }
+    }
+
+    // ─────────────────────────────────────────────
+    // promoCodes/{code} : 프로모션 코드 마스터 (16자리 알파벳+숫자).
+    // 관리자만 create/list/delete. 사용자는 Cloud Function redeemPromoCode 를 통해 간접 사용.
+    // 사용자가 직접 read 가능하면 브루트포스로 유효 코드 탐색 가능 → read 도 admin 만.
+    // ─────────────────────────────────────────────
+    match /promoCodes/{code} {
+      allow read: if isAdmin();
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ─────────────────────────────────────────────
+    // shops/{shopId} : 사장님이 등록한 매장 overlay
+    // ─────────────────────────────────────────────
+    match /shops/{shopId} {
+      allow read: if true;
+      allow create: if isSignedIn() && (
+        // 본인이 자기 매장 등록 — verified 가 false 또는 미설정만 허용
+        (request.resource.data.ownerUid == request.auth.uid
+         && request.resource.data.verified == false
+         && (
+           !('categories' in request.resource.data.keys())
+           || (request.resource.data.categories is list
+               && request.resource.data.categories.size() <= 15)
+         ))
+        // OR 운영자가 매칭 신청 승인 시 / 직접 신규 등록 시 (verified 자유 설정)
+        || isAdmin()
+      );
+      allow update: if isSignedIn() && (
+        (resource.data.ownerUid == request.auth.uid
+         // 본인은 verified 필드 변경 금지 (운영자만 가능)
+         && request.resource.data.verified == resource.data.verified
+         && (
+           !('categories' in request.resource.data.keys())
+           || (request.resource.data.categories is list
+               && request.resource.data.categories.size() <= 15)
+         ))
+        || isAdmin()
+      );
+      allow delete: if isSignedIn() && (
+        resource.data.ownerUid == request.auth.uid || isAdmin()
+      );
+
+      // ─── products/{productId} : 사장님이 등록한 매장 상품 카탈로그.
+      // 누구나 read (매장 상세 표시). 사장님(shop 소유자) 만 write.
+      match /products/{productId} {
+        function isShopOwner() {
+          return isSignedIn()
+            && get(/databases/$(database)/documents/shops/$(shopId)).data.ownerUid == request.auth.uid;
+        }
+        allow read: if true;
+        allow create, update: if (isShopOwner() || isAdmin())
+          && request.resource.data.name is string
+          && request.resource.data.name.size() > 0
+          && request.resource.data.name.size() <= 200
+          && (
+            !('description' in request.resource.data.keys())
+            || (request.resource.data.description is string
+                && request.resource.data.description.size() <= 4000)
+          );
+        allow delete: if isShopOwner() || isAdmin();
+      }
+
+      // ─── customers/{customerUid} : 매장 사장님이 등록한 고객. 사장님 본인 전용 R/W.
+      // 고객 본인은 자기가 등록되어 있는지 알 수 없도록 read 차단 (메모는 사장님 전용).
+      match /customers/{customerUid} {
+        function isShopOwner() {
+          return isSignedIn()
+            && get(/databases/$(database)/documents/shops/$(shopId)).data.ownerUid == request.auth.uid;
+        }
+        allow read: if isShopOwner() || isAdmin();
+        allow create, update: if (isShopOwner() || isAdmin())
+          && (
+            !('memo' in request.resource.data.keys())
+            || (request.resource.data.memo is string
+                && request.resource.data.memo.size() <= 4000)
+          );
+        allow delete: if isShopOwner() || isAdmin();
+      }
+    }
+
+    // ─────────────────────────────────────────────
+    // reviews/{shopCode} : 집계 (ratingSum, ratingCount)
+    // ─────────────────────────────────────────────
+    match /reviews/{shopCode} {
+      allow read: if true;
+      allow write: if isSignedIn();
+
+      match /entries/{uid} {
+        allow read: if true;
+        allow create, update: if isMe(uid)
+          && request.resource.data.rating is number
+          && request.resource.data.rating >= 1
+          && request.resource.data.rating <= 5
+          && request.resource.data.text is string
+          && request.resource.data.text.size() <= 2000;
+        allow delete: if isMe(uid);
+      }
+    }
+
+    // ─────────────────────────────────────────────
+    // partsRequests/{rid} : "부자재 찾기" 요청
+    // ─────────────────────────────────────────────
+    match /partsRequests/{rid} {
+      allow read: if isSignedIn();
+
+      allow create: if isSignedIn()
+        && request.resource.data.authorUid == request.auth.uid
+        && request.resource.data.categories is list
+        && request.resource.data.categories.size() >= 1
+        && request.resource.data.categories.size() <= 3
+        && request.resource.data.text is string
+        && request.resource.data.text.size() <= 2000
+        && request.resource.data.photos is list
+        && request.resource.data.photos.size() <= 5;
+
+      // 본인 글 수정 OR (인증된 사용자) replyCount/updatedAt 만 변경 — 답글 트랜잭션
+      allow update: if isSignedIn() && (
+        resource.data.authorUid == request.auth.uid
+        || request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['replyCount', 'updatedAt'])
+      );
+
+      allow delete: if isSignedIn() && resource.data.authorUid == request.auth.uid;
+
+      // ─── replies/{shopId} : 매장당 답글 1개 (doc id == shopId)
+      match /replies/{shopId} {
+        allow read: if isSignedIn();
+        allow create, update: if isSignedIn()
+          && request.resource.data.ownerUid == request.auth.uid
+          && exists(/databases/$(database)/documents/shops/$(shopId))
+          && get(/databases/$(database)/documents/shops/$(shopId)).data.ownerUid == request.auth.uid
+          && request.resource.data.message is string
+          && request.resource.data.message.size() <= 2000;
+        allow delete: if isSignedIn() && (
+          resource.data.ownerUid == request.auth.uid
+          || get(/databases/$(database)/documents/partsRequests/$(rid)).data.authorUid == request.auth.uid
+        );
+      }
+    }
+
+    // ─────────────────────────────────────────────
+    // homeBanners/{bid} : 홈 광고 배너 (관리자가 콘솔에서 직접 편집)
+    // 누구나 읽기. 쓰기는 차단 — 관리자만 Firebase 콘솔에서.
+    // ─────────────────────────────────────────────
+    match /homeBanners/{bid} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // ─────────────────────────────────────────────
+    // searchBanners/{bid} : 매장 찾기 화면 광고 배너 (어드민 전용 쓰기)
+    // ─────────────────────────────────────────────
+    match /searchBanners/{bid} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // ─────────────────────────────────────────────
+    // settings/{key} : 전역 설정 (배너 노출 모드 등)
+    // 누구나 읽기. 쓰기는 어드민만.
+    // ─────────────────────────────────────────────
+    match /settings/{key} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ─────────────────────────────────────────────
+    // inquiries/{iid} : 일반 문의 (제목·내용·첨부)
+    // 작성: 본인. 읽기: 작성자 본인 OR 어드민. 수정(답변): 어드민. 삭제: 어드민.
+    // ─────────────────────────────────────────────
+    match /inquiries/{iid} {
+      allow create: if isSignedIn()
+        && request.resource.data.authorUid == request.auth.uid
+        && request.resource.data.title is string
+        && request.resource.data.title.size() <= 200
+        && request.resource.data.content is string
+        && request.resource.data.content.size() <= 5000;
+      allow read: if isSignedIn() && (
+        resource.data.authorUid == request.auth.uid
+        || isAdmin()
+      );
+      // 작성자: attachments 추가만 허용 (업로드 후) — title/content/status 잠금
+      // 어드민: 자유롭게 update (답변 등)
+      allow update: if isSignedIn() && (
+        isAdmin()
+        || (resource.data.authorUid == request.auth.uid
+            && request.resource.data.diff(resource.data).affectedKeys()
+                .hasOnly(['attachments', 'updatedAt']))
+      );
+      allow delete: if isAdmin();
+    }
+
+    // ─────────────────────────────────────────────
+    // adInquiries/{aid} : 광고 문의
+    // 작성: 본인. 읽기: 작성자 본인 OR 어드민. 상태/메모 수정: 어드민.
+    // ─────────────────────────────────────────────
+    match /adInquiries/{aid} {
+      allow create: if isSignedIn()
+        && request.resource.data.authorUid == request.auth.uid
+        && request.resource.data.status == 'pending'
+        && request.resource.data.company is string
+        && request.resource.data.contact is string
+        && request.resource.data.phone is string
+        && request.resource.data.email is string;
+      allow read: if isSignedIn() && (
+        resource.data.authorUid == request.auth.uid
+        || isAdmin()
+      );
+      allow update, delete: if isAdmin();
+    }
+
+    // ─────────────────────────────────────────────
+    // merchantClaims/{claimId} : 매장 사장님 매칭 신청
+    // - 본인 read/create. update/delete 는 운영자만.
+    // - 신청 시 status='pending' 고정.
+    // ─────────────────────────────────────────────
+    match /merchantClaims/{claimId} {
+      allow create: if isSignedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.status == 'pending'
+        && request.resource.data.claimType in ['existing', 'new']
+        && request.resource.data.shortId is string
+        && request.resource.data.applicantEmail is string
+        && request.resource.data.applicantPhone is string
+        && request.resource.data.applicantName is string;
+      allow read: if isSignedIn() && (
+        resource.data.uid == request.auth.uid
+        || isAdmin()
+      );
+      // 본인은 수정 불가, 운영자만 상태/이유 변경 가능
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ─────────────────────────────────────────────
+    // userLookup/{shortId} : shortId → uid/displayName 공개 매핑 (사장님 ID 검색용)
+    // 본인만 자기 lookup write. 누구나 read (lookup 목적).
+    // 추가 정보 노출 없음: uid, shortId, displayName 만.
+    // ─────────────────────────────────────────────
+    match /userLookup/{shortId} {
+      allow read: if true;
+      allow create, update: if isSignedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.shortId == shortId
+        && request.resource.data.keys().hasOnly(['uid', 'shortId', 'displayName']);
+      allow delete: if isMe(resource.data.uid) || isAdmin();
+    }
+
+    // ─────────────────────────────────────────────
+    // customerRequests/{requestId} : 사장 → 고객 등록 요청
+    // 사장이 create. 고객(target) 만 status 변경 (승인/거절).
+    // 사장/고객 본인 read.
+    // ─────────────────────────────────────────────
+    match /customerRequests/{requestId} {
+      allow create: if isSignedIn()
+        && request.resource.data.merchantUid == request.auth.uid
+        && request.resource.data.status == 'pending'
+        && request.resource.data.customerUid is string
+        && request.resource.data.shopId is string
+        && request.resource.data.shopDisplayName is string;
+      allow read: if isSignedIn() && (
+        resource.data.merchantUid == request.auth.uid
+        || resource.data.customerUid == request.auth.uid
+        || isAdmin()
+      );
+      // 고객 본인만 status 변경 가능 (approved / rejected). 다른 필드 잠금.
+      allow update: if isSignedIn()
+        && resource.data.customerUid == request.auth.uid
+        && request.resource.data.status in ['approved', 'rejected']
+        && request.resource.data.merchantUid == resource.data.merchantUid
+        && request.resource.data.shopId == resource.data.shopId
+        && request.resource.data.customerUid == resource.data.customerUid;
+      allow delete: if isSignedIn() && (
+        resource.data.merchantUid == request.auth.uid
+        || resource.data.customerUid == request.auth.uid
+        || isAdmin()
+      );
+    }
+
+    // ─────────────────────────────────────────────
+    // chats/{chatId} : 방문자 ↔ 사장님 1:1 채팅
+    // - participants[] 에 본인 uid 가 있어야 read 가능.
+    // - 채팅방 생성은 방문자 측에서 (방문자/사장님 모두 participant).
+    // ─────────────────────────────────────────────
+    match /chats/{chatId} {
+      allow create: if isSignedIn()
+        && request.resource.data.participants is list
+        && request.resource.data.participants.size() == 2
+        && request.auth.uid in request.resource.data.participants
+        && request.resource.data.shopId is string
+        && request.resource.data.visitorUid is string
+        && request.resource.data.merchantUid is string;
+      // get: doc 미존재 시 통과 (ensureChat 의 getDoc 흐름 허용), 존재 시 참여자만
+      allow get: if isSignedIn() && (
+        resource == null
+        || request.auth.uid in resource.data.participants
+        || isAdmin()
+      );
+      // list: 본인이 participants 에 포함된 채팅만 (query 가 array-contains 로 필터링)
+      // 또는 어드민. Firestore 는 per-doc 으로 평가하므로 안전.
+      allow list: if isSignedIn() && (
+        request.auth.uid in resource.data.participants
+        || isAdmin()
+      );
+      // participants/shopId/visitorUid/merchantUid 잠금. lastMessage/lastMessageAt/unread 만 변경 가능.
+      allow update: if isSignedIn()
+        && request.auth.uid in resource.data.participants
+        && request.resource.data.participants == resource.data.participants
+        && request.resource.data.shopId == resource.data.shopId
+        && request.resource.data.visitorUid == resource.data.visitorUid
+        && request.resource.data.merchantUid == resource.data.merchantUid;
+      allow delete: if isAdmin();
+
+      match /messages/{messageId} {
+        allow read: if isSignedIn() && (
+          request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants
+          || isAdmin()
+        );
+        allow create: if isSignedIn()
+          && request.resource.data.senderUid == request.auth.uid
+          && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants
+          && request.resource.data.type in ['text', 'image', 'video']
+          && (
+            !('text' in request.resource.data.keys())
+            || (request.resource.data.text is string && request.resource.data.text.size() <= 4000)
+          );
+        // 메시지는 immutable. 삭제는 작성자 본인.
+        allow update: if false;
+        allow delete: if isSignedIn() && resource.data.senderUid == request.auth.uid;
+      }
+    }
+
+    // ─────────────────────────────────────────────
+    // reports/{rid} : 부적절 콘텐츠 신고 (App Store 1.2 가이드라인 대응)
+    // 본인이 reporterUid 인 경우만 작성 가능, 읽기/수정/삭제는 관리자(콘솔)만.
+    // ─────────────────────────────────────────────
+    match /reports/{rid} {
+      allow create: if isSignedIn()
+        && request.resource.data.reporterUid == request.auth.uid
+        && request.resource.data.targetType in ['review', 'partsRequest', 'partsReply', 'user']
+        && request.resource.data.reason in ['spam', 'abuse', 'inappropriate', 'fake', 'copyright', 'other']
+        && request.resource.data.targetId is string
+        && request.resource.data.targetOwnerUid is string
+        && request.resource.data.status == 'open'
+        && (
+          !('detail' in request.resource.data.keys())
+          || (request.resource.data.detail is string && request.resource.data.detail.size() <= 1000)
+        );
+      allow read, update, delete: if false;
+    }
+  }
+}

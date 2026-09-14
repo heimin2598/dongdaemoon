@@ -1,31 +1,10 @@
-import React from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
-import { router, useFocusEffect } from 'expo-router';
-import { Colors } from '@/constants/colors';
-import { useMapStore } from '@/stores/mapStore';
+import { MapBuildingScreen } from '@/components/map/MapBuildingScreen';
 
 /**
- * 지도 탭 — 탭이 포커스될 때마다 지도 화면으로 전환한다.
- * 동/층은 마지막 선택 유지, 방향은 항상 "세로"로 리셋.
- * 탭바는 map-building 경로에서는 보이지 않는다.
+ * 지도 탭 — 탭 안에서 직접 지도 화면을 렌더.
+ * 이전 구현은 /map-building 으로 Redirect 했는데 그 cross-navigator transition 이
+ * release 빌드에서 silent native crash 를 유발. 같은 컴포넌트를 (tabs)/map 안에서
+ * 직접 렌더하면 transition 자체가 일어나지 않음.
+ * 탭바는 (tabs)/_layout.tsx 의 tabBarStyle 옵션으로 이 화면에서 숨김.
  */
-export default function MapTab() {
-  const setOrientation = useMapStore((s) => s.setOrientation);
-
-  useFocusEffect(
-    React.useCallback(() => {
-      setOrientation('portrait');
-      router.replace('/map-building');
-    }, [setOrientation]),
-  );
-
-  return (
-    <View style={styles.center}>
-      <ActivityIndicator color={Colors.primary} />
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.background },
-});
+export default MapBuildingScreen;

@@ -19,7 +19,7 @@ export function TextInput({ label, error, style, ...rest }: Props) {
       {label && <Text style={styles.label}>{label}</Text>}
       <RNTextInput
         placeholderTextColor={Colors.textMuted}
-        style={[styles.input, error && styles.inputError, style]}
+        style={[styles.input, !!error && styles.inputError, style]}
         {...rest}
       />
       {error && <Text style={styles.errorText}>{error}</Text>}

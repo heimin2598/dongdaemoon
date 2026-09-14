@@ -8,7 +8,8 @@ import {
   View,
 } from 'react-native';
 import { router } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ChevronLeft, Maximize2, Minus, Plus, RotateCcw, X } from 'lucide-react-native';
 import { Colors, BuildingColors } from '@/constants/colors';
 import { useMapStore } from '@/stores/mapStore';
 import { BuildingCode, FloorCode } from '@/types';
@@ -54,6 +55,7 @@ export default function OverviewScreen() {
 
   const [isFullscreen, setIsFullscreen] = useState(false);
   const zoomRef = useRef<ZoomableMapHandle>(null);
+  const insets = useSafeAreaInsets();
 
   const goTo = (building: BuildingCode, floor: FloorCode) => {
     setBuilding(building);
@@ -85,7 +87,7 @@ export default function OverviewScreen() {
           {!isFullscreen && (
             <View style={styles.landscapeHeader}>
               <Pressable onPress={() => router.back()} hitSlop={10} style={styles.backBtn}>
-                <Text style={styles.backText}>‹</Text>
+                <ChevronLeft size={26} color={Colors.text} strokeWidth={2} />
               </Pressable>
               <Text style={styles.title}>한눈에 보기</Text>
               <Text style={styles.hint}>탭하면 해당 지도로 이동</Text>
@@ -101,31 +103,38 @@ export default function OverviewScreen() {
             />
 
             {/* 좌하단: 줌 인/아웃 (가로 레이아웃 기준 왼쪽 아래) */}
-            <View style={styles.zoomControls} pointerEvents="box-none">
+            <View style={[styles.zoomControls, { bottom: 12 + insets.bottom }]} pointerEvents="box-none">
               <Pressable style={styles.zoomBtn} onPress={() => zoomRef.current?.zoomIn()}>
-                <Text style={styles.zoomBtnText}>＋</Text>
+                <Plus size={20} color={Colors.text} strokeWidth={2.5} />
               </Pressable>
               <View style={styles.zoomDivider} />
               <Pressable style={styles.zoomBtn} onPress={() => zoomRef.current?.zoomOut()}>
-                <Text style={styles.zoomBtnText}>－</Text>
+                <Minus size={20} color={Colors.text} strokeWidth={2.5} />
               </Pressable>
             </View>
 
             {/* 우하단: 원위치 + 전체보기 */}
-            <View style={styles.rightBtnStack} pointerEvents="box-none">
+            <View
+              style={[styles.rightBtnStack, { bottom: 12 + insets.bottom }]}
+              pointerEvents="box-none"
+            >
               <Pressable
                 style={styles.resetBtn}
                 onPress={() => zoomRef.current?.reset()}
                 accessibilityLabel="원위치"
               >
-                <Text style={styles.resetBtnIcon}>⟲</Text>
+                <RotateCcw size={14} color={Colors.text} strokeWidth={2} />
                 <Text style={styles.resetBtnText}>원위치</Text>
               </Pressable>
               <Pressable
                 style={styles.fitBtn}
                 onPress={() => setIsFullscreen((v) => !v)}
               >
-                <Text style={styles.fitBtnIcon}>{isFullscreen ? '✕' : '⛶'}</Text>
+                {isFullscreen ? (
+                  <X size={14} color={Colors.text} strokeWidth={2} />
+                ) : (
+                  <Maximize2 size={14} color={Colors.text} strokeWidth={2} />
+                )}
                 <Text style={styles.fitBtnText}>{isFullscreen ? '닫기' : '전체보기'}</Text>
               </Pressable>
             </View>
@@ -142,7 +151,7 @@ function MapArea({
   availH,
   goTo,
 }: {
-  zoomRef: React.RefObject<ZoomableMapHandle>;
+  zoomRef: React.RefObject<ZoomableMapHandle | null>;
   availW: number;
   availH: number;
   goTo: (b: BuildingCode, f: FloorCode) => void;

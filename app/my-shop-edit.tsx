@@ -1,16 +1,21 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Image,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput as RNTextInput,
   View,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import * as ImagePicker from 'expo-image-picker';
+import { Camera, Plus, Trash2, X } from 'lucide-react-native';
 import { Button } from '@/components/common/Button';
 import { TextInput } from '@/components/common/TextInput';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
@@ -25,13 +30,38 @@ import {
 import { getStoreByCode, searchStores } from '@/data/stores';
 import { showInfoAlert } from '@/utils/alerts';
 import { Store } from '@/data/stores/types';
+import { BusinessHourEntry, DayOfWeek, PartsCategory, PaymentMethod, ShopPhoto } from '@/types';
+
+const DAY_LABELS: Record<DayOfWeek, string> = {
+  mon: '월', tue: '화', wed: '수', thu: '목', fri: '금', sat: '토', sun: '일',
+};
+const DAY_ORDER: DayOfWeek[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+const DEFAULT_SCHEDULE: BusinessHourEntry[] = DAY_ORDER.map((d) => ({
+  day: d,
+  enabled: d !== 'sun',
+  start: '09:00',
+  end: '18:00',
+}));
+import { PAYMENT_METHODS } from '@/lib/paymentMethods';
+import {
+  MAX_SHOP_PHOTOS,
+  deleteShopPhoto,
+  uploadShopPhoto,
+} from '@/lib/shopPhotos';
+import { showConfirmAlert } from '@/utils/alerts';
+import {
+  PARTS_CATEGORY_LABEL,
+  PARTS_CATEGORY_ORDER,
+} from '@/constants/partsCategories';
+import { generateShortId } from '@/utils/shortId';
 
 type SearchMode = 'unit' | 'name';
 
 export default function MyShopEditScreen() {
-  const params = useLocalSearchParams<{ id?: string }>();
+  const params = useLocalSearchParams<{ id?: string; new?: string }>();
   const shopId = typeof params.id === 'string' ? params.id : undefined;
   const isEdit = !!shopId;
+  const isNewMode = params.new === '1';
 
   const user = useAuthStore((s) => s.user);
   const isMerchant = user?.role === 'merchant' && user?.status === 'active';
@@ -43,10 +73,29 @@ export default function MyShopEditScreen() {
   const [phone, setPhone] = useState('');
   const [hours, setHours] = useState('');
   const [description, setDescription] = useState('');
+  const [categories, setCategories] = useState<PartsCategory[]>([]);
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
+  const [photos, setPhotos] = useState<ShopPhoto[]>([]);
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const [schedule, setSchedule] = useState<BusinessHourEntry[]>(DEFAULT_SCHEDULE);
+
+  const toggleCategory = (c: PartsCategory) => {
+    setCategories((prev) =>
+      prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c],
+    );
+  };
 
   // 검색 모드 (Phase 1만 사용)
   const [searchMode, setSearchMode] = useState<SearchMode>('unit');
   const [searchQuery, setSearchQuery] = useState('');
+
+  // ?new=1 로 진입했고 storeCodes 가 비어있으면 자동으로 5자리 코드 부여
+  useEffect(() => {
+    if (isNewMode && !isEdit && storeCodes.length === 0) {
+      setStoreCodes([generateShortId()]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isNewMode, isEdit]);
 
   // Phase 2: 추가 호수 검색 (호수만)
   const [addUnitQuery, setAddUnitQuery] = useState('');
@@ -73,6 +122,14 @@ export default function MyShopEditScreen() {
         setPhone(shop.phone);
         setHours(shop.businessHours);
         setDescription(shop.description);
+        setCategories(shop.categories ?? []);
+        setPaymentMethods(shop.paymentMethods ?? []);
+        setPhotos(shop.photos ?? []);
+        if (shop.businessHoursSchedule && shop.businessHoursSchedule.length > 0) {
+          // 누락된 요일은 기본 비활성으로 보충
+          const map = new Map(shop.businessHoursSchedule.map((e) => [e.day, e]));
+          setSchedule(DAY_ORDER.map((d) => map.get(d) ?? { day: d, enabled: false, start: '09:00', end: '18:00' }));
+        }
       } catch (e: any) {
         showInfoAlert('불러오기 실패', e?.message ?? '잠시 후 다시 시도해 주세요.');
       } finally {
@@ -157,6 +214,58 @@ export default function MyShopEditScreen() {
     setStoreCodes((prev) => prev.filter((c) => c !== code));
   };
 
+  const onAddPhoto = async () => {
+    if (!shopId) {
+      showInfoAlert('매장 저장 필요', '먼저 매장을 등록하고 다시 들어와서 사진을 올려 주세요.');
+      return;
+    }
+    if (photos.length >= MAX_SHOP_PHOTOS) {
+      showInfoAlert('업로드 한도', `매장당 최대 ${MAX_SHOP_PHOTOS}장까지 업로드 가능합니다.`);
+      return;
+    }
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      showInfoAlert('권한 필요', '사진 라이브러리 접근 권한이 필요합니다.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.85,
+    });
+    if (result.canceled) return;
+    const uri = result.assets[0]?.uri;
+    if (!uri) return;
+    setPhotoBusy(true);
+    try {
+      const p = await uploadShopPhoto(shopId, uri);
+      setPhotos((prev) => [...prev, p]);
+    } catch (e: any) {
+      showInfoAlert('업로드 실패', e?.message ?? '네트워크 오류입니다.');
+    } finally {
+      setPhotoBusy(false);
+    }
+  };
+
+  const onRemovePhoto = (p: ShopPhoto) => {
+    if (!shopId) return;
+    showConfirmAlert(
+      '사진 삭제',
+      '이 사진을 매장 갤러리에서 제거할까요?',
+      async () => {
+        setPhotoBusy(true);
+        try {
+          await deleteShopPhoto(shopId, p);
+          setPhotos((prev) => prev.filter((x) => x.storagePath !== p.storagePath));
+        } catch (e: any) {
+          showInfoAlert('삭제 실패', e?.message ?? '네트워크 오류입니다.');
+        } finally {
+          setPhotoBusy(false);
+        }
+      },
+      { confirmLabel: '삭제', destructive: true },
+    );
+  };
+
   const onSave = async () => {
     if (storeCodes.length === 0) {
       showInfoAlert('매장 매칭 필요', '먼저 본인 매장을 검색해서 매칭해 주세요.');
@@ -176,7 +285,10 @@ export default function MyShopEditScreen() {
           displayName: displayName.trim(),
           phone: phone.trim(),
           businessHours: hours.trim(),
+          businessHoursSchedule: schedule,
           description: description.trim(),
+          categories,
+          paymentMethods,
         });
       } else {
         await createShop({
@@ -185,7 +297,10 @@ export default function MyShopEditScreen() {
           displayName: displayName.trim(),
           phone: phone.trim(),
           businessHours: hours.trim(),
+          businessHoursSchedule: schedule,
           description: description.trim(),
+          categories,
+          paymentMethods,
         });
       }
       router.back();
@@ -198,7 +313,7 @@ export default function MyShopEditScreen() {
 
   if (!isMerchant) {
     return (
-      <SafeAreaView style={styles.safe} edges={['top']}>
+      <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
         <ScreenHeader title={isEdit ? '매장 편집' : '내 매장 매칭'} />
       </SafeAreaView>
     );
@@ -206,7 +321,7 @@ export default function MyShopEditScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.safe} edges={['top']}>
+      <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
         <ScreenHeader title={isEdit ? '매장 편집' : '내 매장 매칭'} />
         <View style={styles.center}>
           <ActivityIndicator color={Colors.primary} />
@@ -218,7 +333,7 @@ export default function MyShopEditScreen() {
   const matchedFirst = storeCodes.length > 0 ? getStoreByCode(storeCodes[0]) : null;
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
+    <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <ScreenHeader title={isEdit ? '매장 편집' : '내 매장 매칭'} />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
@@ -291,6 +406,27 @@ export default function MyShopEditScreen() {
                   <Text style={styles.noResult}>검색 결과가 없습니다.</Text>
                 )
               )}
+
+              {/* 디렉터리에 없는 매장 — 신규 등록 진입 */}
+              <View style={styles.newRegisterWrap}>
+                <Text style={styles.newRegisterHint}>
+                  찾는 매장이 디렉터리에 없으신가요?
+                </Text>
+                <Pressable
+                  style={styles.newRegisterBtn}
+                  onPress={() => {
+                    setStoreCodes([generateShortId()]);
+                    setSearchQuery('');
+                  }}
+                >
+                  <Plus size={16} color={Colors.primary} strokeWidth={2.4} />
+                  <Text style={styles.newRegisterBtnText}>신규 매장 등록</Text>
+                </Pressable>
+                <Text style={styles.newRegisterDetail}>
+                  매장 정보(상호·전화·소개 등)를 직접 입력해 등록할 수 있습니다.
+                  운영자 검수 후 디렉터리에 반영될 수 있습니다.
+                </Text>
+              </View>
             </>
           )}
 
@@ -316,7 +452,7 @@ export default function MyShopEditScreen() {
                         {idx === 0 ? ' · 대표' : ''}
                       </Text>
                       <Pressable onPress={() => onRemoveCode(code)} hitSlop={8}>
-                        <Text style={styles.codeChipRemove}>×</Text>
+                        <X size={14} color={Colors.textMuted} strokeWidth={2.5} />
                       </Pressable>
                     </View>
                   );
@@ -351,7 +487,10 @@ export default function MyShopEditScreen() {
                           {s.building}동 · {s.floor} · {s.unit}호
                         </Text>
                       </View>
-                      <Text style={styles.resultAdd}>+ 추가</Text>
+                      <View style={styles.resultAddRow}>
+                        <Plus size={14} color={Colors.primary} strokeWidth={2.5} />
+                        <Text style={styles.resultAdd}>추가</Text>
+                      </View>
                     </Pressable>
                   ))}
                 </View>
@@ -377,22 +516,188 @@ export default function MyShopEditScreen() {
                 value={phone}
                 onChangeText={setPhone}
               />
-              <TextInput
-                label="영업시간"
-                placeholder="예: 월-토 09:00-18:00 / 일요일 휴무"
-                value={hours}
-                onChangeText={setHours}
-              />
-              <TextInput
-                label="매장 소개 / 취급 품목"
-                placeholder="우리 매장은… 어떤 원단을 취급하고… 어떤 부자재를…"
-                value={description}
-                onChangeText={setDescription}
-                multiline
-                numberOfLines={4}
-              />
+              <Text style={styles.sectionLabel}>영업시간</Text>
+              <Text style={styles.sectionHint}>
+                요일별로 영업 여부 체크 + 시작/종료 시각을 입력하세요. 미체크 요일은 휴무로 표시됩니다.
+              </Text>
+              <View style={styles.scheduleWrap}>
+                {schedule.map((entry, idx) => (
+                  <View key={entry.day} style={styles.scheduleRow}>
+                    <Pressable
+                      onPress={() =>
+                        setSchedule((prev) =>
+                          prev.map((e, i) =>
+                            i === idx ? { ...e, enabled: !e.enabled } : e,
+                          ),
+                        )
+                      }
+                      style={[
+                        styles.scheduleDayBtn,
+                        entry.enabled && styles.scheduleDayBtnActive,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.scheduleDayText,
+                          entry.enabled && styles.scheduleDayTextActive,
+                        ]}
+                      >
+                        {DAY_LABELS[entry.day]}
+                      </Text>
+                    </Pressable>
+                    <RNTextInput
+                      value={entry.start ?? ''}
+                      onChangeText={(v) =>
+                        setSchedule((prev) =>
+                          prev.map((e, i) => (i === idx ? { ...e, start: v } : e)),
+                        )
+                      }
+                      placeholder="09:00"
+                      placeholderTextColor={Colors.textMuted}
+                      editable={entry.enabled}
+                      style={[styles.scheduleInput, !entry.enabled && styles.scheduleInputDisabled]}
+                      maxLength={5}
+                    />
+                    <Text style={styles.scheduleSep}>~</Text>
+                    <RNTextInput
+                      value={entry.end ?? ''}
+                      onChangeText={(v) =>
+                        setSchedule((prev) =>
+                          prev.map((e, i) => (i === idx ? { ...e, end: v } : e)),
+                        )
+                      }
+                      placeholder="18:00"
+                      placeholderTextColor={Colors.textMuted}
+                      editable={entry.enabled}
+                      style={[styles.scheduleInput, !entry.enabled && styles.scheduleInputDisabled]}
+                      maxLength={5}
+                    />
+                    {!entry.enabled && <Text style={styles.scheduleClosed}>휴무</Text>}
+                  </View>
+                ))}
+              </View>
+              <View style={{ marginBottom: 14 }}>
+                <View style={styles.descLabelRow}>
+                  <Text style={styles.descLabel}>매장 소개 / 취급 품목</Text>
+                  <Pressable
+                    onPress={() => Keyboard.dismiss()}
+                    hitSlop={10}
+                    style={styles.descDoneBtn}
+                  >
+                    <Text style={styles.descDoneText}>완료</Text>
+                  </Pressable>
+                </View>
+                <RNTextInput
+                  value={description}
+                  onChangeText={setDescription}
+                  placeholder="우리 매장은… 어떤 원단을 취급하고… 어떤 부자재를…"
+                  placeholderTextColor={Colors.textMuted}
+                  multiline
+                  numberOfLines={4}
+                  textAlignVertical="top"
+                  style={styles.descInput}
+                />
+              </View>
 
               <View style={{ height: 8 }} />
+              <Text style={styles.sectionLabel}>취급 카테고리</Text>
+              <Text style={styles.sectionHint}>
+                선택한 카테고리의 부자재 찾기 요청만 "내 분야" 필터로 받아볼 수 있습니다. (복수 선택)
+              </Text>
+              <View style={styles.categoryGrid}>
+                {PARTS_CATEGORY_ORDER.map((c) => {
+                  const active = categories.includes(c);
+                  return (
+                    <Pressable
+                      key={c}
+                      style={[styles.categoryChip, active && styles.categoryChipActive]}
+                      onPress={() => toggleCategory(c)}
+                    >
+                      <Text
+                        style={[
+                          styles.categoryChipText,
+                          active && styles.categoryChipTextActive,
+                        ]}
+                      >
+                        {PARTS_CATEGORY_LABEL[c]}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+
+              <View style={{ height: 16 }} />
+              <Text style={styles.sectionLabel}>결제 수단</Text>
+              <Text style={styles.sectionHint}>
+                받는 결제 수단을 모두 선택하세요. 매장 상세에 배지로 노출됩니다.
+              </Text>
+              <View style={styles.categoryGrid}>
+                {PAYMENT_METHODS.map((p) => {
+                  const active = paymentMethods.includes(p.key);
+                  return (
+                    <Pressable
+                      key={p.key}
+                      style={[styles.categoryChip, active && styles.categoryChipActive]}
+                      onPress={() =>
+                        setPaymentMethods((prev) =>
+                          prev.includes(p.key)
+                            ? prev.filter((x) => x !== p.key)
+                            : [...prev, p.key],
+                        )
+                      }
+                    >
+                      <Text
+                        style={[
+                          styles.categoryChipText,
+                          active && styles.categoryChipTextActive,
+                        ]}
+                      >
+                        {p.emoji} {p.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+
+              <View style={{ height: 16 }} />
+              <Text style={styles.sectionLabel}>매장 사진</Text>
+              <Text style={styles.sectionHint}>
+                매장 / 상품 / 스와치 사진을 올려 매장 상세에 노출하세요. 최대 {MAX_SHOP_PHOTOS}장.
+                {!isEdit ? ' (매장 등록 후 다시 들어오면 업로드 가능)' : ''}
+              </Text>
+              <View style={styles.photoGrid}>
+                {photos.map((p) => (
+                  <View key={p.storagePath} style={styles.photoCell}>
+                    <Image source={{ uri: p.url }} style={styles.photoImg} />
+                    <Pressable
+                      style={styles.photoRemove}
+                      onPress={() => onRemovePhoto(p)}
+                      hitSlop={6}
+                      disabled={photoBusy}
+                    >
+                      <Trash2 size={14} color="#fff" strokeWidth={2.4} />
+                    </Pressable>
+                  </View>
+                ))}
+                {photos.length < MAX_SHOP_PHOTOS && (
+                  <Pressable
+                    style={[styles.photoCell, styles.photoAdd]}
+                    onPress={onAddPhoto}
+                    disabled={photoBusy}
+                  >
+                    {photoBusy ? (
+                      <ActivityIndicator color={Colors.primary} />
+                    ) : (
+                      <View style={styles.photoAddInner}>
+                        <Camera size={22} color={Colors.primary} strokeWidth={2} />
+                        <Text style={styles.photoAddText}>사진 추가</Text>
+                      </View>
+                    )}
+                  </Pressable>
+                )}
+              </View>
+
+              <View style={{ height: 16 }} />
               <Button label={isEdit ? '저장' : '등록'} onPress={onSave} loading={saving} />
             </>
           )}
@@ -491,6 +796,151 @@ const styles = StyleSheet.create({
   },
   resultName: { fontSize: 14, fontWeight: '700', color: Colors.text },
   resultMeta: { fontSize: 12, color: Colors.textMuted, marginTop: 2 },
+  resultAddRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   resultAdd: { fontSize: 12, fontWeight: '800', color: Colors.primary },
   noResult: { fontSize: 12, color: Colors.textMuted, fontStyle: 'italic', marginTop: 4 },
+
+  categoryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
+  categoryChip: {
+    width: '31.5%',
+    height: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.surface,
+  },
+  categoryChipActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
+  categoryChipText: { fontSize: 12, fontWeight: '600', color: Colors.text },
+  categoryChipTextActive: { color: '#fff' },
+
+  photoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
+  photoCell: {
+    width: '31.5%',
+    aspectRatio: 1,
+    borderRadius: 10,
+    overflow: 'hidden',
+    backgroundColor: Colors.background,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  photoImg: { width: '100%', height: '100%' },
+  photoRemove: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  photoAdd: {
+    borderStyle: 'dashed',
+    borderColor: Colors.primary,
+    backgroundColor: '#F0F4FB',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  photoAddInner: {
+    flex: 1,
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 4,
+    width: '100%',
+  },
+  photoAddText: { fontSize: 11, color: Colors.primary, fontWeight: '700' },
+
+  newRegisterWrap: {
+    marginTop: 18,
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    borderColor: Colors.primary,
+    backgroundColor: '#F0F4FB',
+    gap: 8,
+    alignItems: 'center',
+  },
+  newRegisterHint: { fontSize: 12, color: Colors.textMuted },
+  newRegisterBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 10,
+    backgroundColor: Colors.surface,
+    borderWidth: 1.5,
+    borderColor: Colors.primary,
+  },
+  newRegisterBtnText: { fontSize: 13, fontWeight: '800', color: Colors.primary },
+  newRegisterDetail: {
+    fontSize: 11,
+    color: Colors.textMuted,
+    textAlign: 'center',
+    lineHeight: 16,
+  },
+
+  scheduleWrap: { gap: 6, marginTop: 4, marginBottom: 12 },
+  scheduleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  scheduleDayBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.background,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  scheduleDayBtnActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
+  scheduleDayText: { fontSize: 13, fontWeight: '800', color: Colors.textMuted },
+  scheduleDayTextActive: { color: '#fff' },
+  scheduleInput: {
+    width: 76,
+    height: 42,
+    paddingHorizontal: 10,
+    paddingVertical: 0,
+    lineHeight: 18,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.surface,
+    fontSize: 14,
+    color: Colors.text,
+    textAlign: 'center',
+    textAlignVertical: 'center',
+    includeFontPadding: false,
+  },
+  scheduleInputDisabled: { backgroundColor: Colors.divider, color: Colors.textMuted },
+  scheduleSep: { fontSize: 13, color: Colors.textMuted, fontWeight: '700' },
+  scheduleClosed: { fontSize: 11, color: Colors.danger, fontWeight: '800', marginLeft: 'auto' },
+
+  descLabelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
+  descLabel: { fontSize: 13, fontWeight: '600', color: Colors.text },
+  descDoneBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 6,
+    backgroundColor: Colors.primary,
+  },
+  descDoneText: { color: '#fff', fontSize: 11, fontWeight: '800' },
+  descInput: {
+    minHeight: 110,
+    maxHeight: 240,
+    paddingHorizontal: 14,
+    paddingTop: 12,
+    paddingBottom: 12,
+    borderRadius: 10,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    fontSize: 15,
+    color: Colors.text,
+    lineHeight: 22,
+  },
 });

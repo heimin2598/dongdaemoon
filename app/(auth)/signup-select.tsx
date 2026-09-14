@@ -2,39 +2,54 @@ import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { ChevronRight } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { Colors } from '@/constants/colors';
 
 export default function SignupSelectScreen() {
+  const { t } = useTranslation();
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
-      <ScreenHeader title="회원가입" />
+    <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
+      <ScreenHeader title={t('auth.signUp')} />
       <ScrollView contentContainerStyle={styles.scroll}>
-        <Text style={styles.heading}>회원 유형 선택</Text>
-        <Text style={styles.desc}>가입 유형을 선택해 주세요.</Text>
+        <Text style={styles.heading}>{t('auth.selectRole')}</Text>
+        <Text style={styles.desc}>{t('auth.selectRoleDesc')}</Text>
 
         <View style={styles.cardBlock}>
           <RoleCard
-            badge="방문자"
-            title="방문자 회원가입"
-            desc={'동대문 종합시장을 방문하는\n고객을 위한 가입입니다.'}
+            badge={t('auth.visitor')}
+            title={t('auth.visitorTitle')}
+            desc={t('auth.visitorDesc')}
             icon="🧭"
             onPress={() => router.push('/(auth)/signup')}
           />
           <RoleCard
-            badge="매장 사장님"
-            title="매장 사장님 회원가입"
-            desc={'동대문 종합시장 내 매장을\n운영하시는 사장님을 위한 가입입니다.'}
+            badge={t('auth.merchant')}
+            title={t('auth.merchantTitle')}
+            desc={t('auth.merchantDesc')}
             icon="🏬"
             onPress={() => router.push('/(auth)/signup-store')}
           />
         </View>
 
         <Text style={styles.footer}>
-          이미 계정이 있으신가요?{' '}
+          {t('auth.alreadyHaveAccount')}{' '}
           <Text style={styles.link} onPress={() => router.replace('/(auth)/login')}>
-            로그인
+            {t('auth.signIn')}
           </Text>
+        </Text>
+
+        <Text style={styles.legalNotice}>
+          회원가입을 진행하면{' '}
+          <Text style={styles.legalLink} onPress={() => router.push('/terms-of-service')}>
+            이용약관
+          </Text>
+          {' 및 '}
+          <Text style={styles.legalLink} onPress={() => router.push('/privacy-policy')}>
+            개인정보처리방침
+          </Text>
+          에 동의하는 것으로 간주됩니다.
         </Text>
       </ScrollView>
     </SafeAreaView>
@@ -65,7 +80,7 @@ function RoleCard({ badge, title, desc, icon, onPress }: RoleCardProps) {
         <Text style={styles.cardTitle}>{title}</Text>
         <Text style={styles.cardDesc}>{desc}</Text>
       </View>
-      <Text style={styles.chevron}>›</Text>
+      <ChevronRight size={22} color={Colors.textMuted} />
     </Pressable>
   );
 }
@@ -110,4 +125,13 @@ const styles = StyleSheet.create({
   chevron: { fontSize: 28, color: Colors.textMuted, marginLeft: 8 },
   footer: { marginTop: 28, fontSize: 13, color: Colors.textMuted, textAlign: 'center' },
   link: { color: Colors.primary, fontWeight: '700' },
+  legalNotice: {
+    marginTop: 18,
+    fontSize: 11,
+    color: Colors.textMuted,
+    textAlign: 'center',
+    lineHeight: 17,
+    paddingHorizontal: 8,
+  },
+  legalLink: { color: Colors.primary, fontWeight: '700', textDecorationLine: 'underline' },
 });

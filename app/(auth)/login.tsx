@@ -19,8 +19,10 @@ import { useAuthStore } from '@/stores/authStore';
 import { useGoogleAuth } from '@/hooks/useGoogleAuth';
 import { useAppleAuth } from '@/hooks/useAppleAuth';
 import { showInfoAlert } from '@/utils/alerts';
+import { useTranslation } from 'react-i18next';
 
 export default function LoginScreen() {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -82,8 +84,8 @@ export default function LoginScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
-      <ScreenHeader title="로그인" />
+    <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
+      <ScreenHeader title={t('auth.signIn')} />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -93,7 +95,8 @@ export default function LoginScreen() {
           <Text style={styles.desc}>동대문 종합시장 셰르파로 원하는 곳을 빠르게 찾으세요.</Text>
 
           <TextInput
-            label="이메일"
+            testID="emailInput"
+            label={t('auth.email')}
             placeholder="you@example.com"
             autoCapitalize="none"
             keyboardType="email-address"
@@ -101,7 +104,8 @@ export default function LoginScreen() {
             onChangeText={setEmail}
           />
           <TextInput
-            label="비밀번호"
+            testID="passwordInput"
+            label={t('auth.password')}
             placeholder="••••••"
             secureTextEntry
             value={password}
@@ -109,7 +113,7 @@ export default function LoginScreen() {
             error={error ?? undefined}
           />
 
-          <Button label="로그인" onPress={onLogin} loading={loading} />
+          <Button label={t('auth.signIn')} onPress={onLogin} loading={loading} />
 
           <Pressable
             onPress={() => router.push('/(auth)/forgot-password')}
@@ -125,14 +129,14 @@ export default function LoginScreen() {
           </View>
 
           <Button
-            label="Google로 계속하기"
+            label={t('auth.googleSignIn')}
             variant="secondary"
             onPress={onGoogle}
             style={{ marginBottom: 10 }}
           />
           {appleAvailable && (
             <Button
-              label="Apple로 계속하기"
+              label={t('auth.appleSignIn')}
               variant="secondary"
               onPress={onApple}
             />

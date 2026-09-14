@@ -1,26 +1,30 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
+import { ChevronLeft } from 'lucide-react-native';
 import { Colors } from '@/constants/colors';
 
 interface Props {
   title: string;
   subtitle?: string;
   showBack?: boolean;
+  /** 뒤로가기 동작 재정의 (예: 광고 호출 후 router.back). 미지정 시 기본 동작. */
+  onBack?: () => void;
   rightSlot?: React.ReactNode;
 }
 
-export function ScreenHeader({ title, subtitle, showBack = true, rightSlot }: Props) {
+export function ScreenHeader({ title, subtitle, showBack = true, onBack, rightSlot }: Props) {
+  const defaultBack = () => (router.canGoBack() ? router.back() : router.replace('/home'));
   return (
     <View style={styles.wrap}>
       <View style={styles.row}>
         {showBack ? (
           <Pressable
-            onPress={() => (router.canGoBack() ? router.back() : router.replace('/home'))}
+            onPress={onBack ?? defaultBack}
             hitSlop={10}
             style={styles.back}
           >
-            <Text style={styles.backText}>‹</Text>
+            <ChevronLeft size={28} color={Colors.text} strokeWidth={2} />
           </Pressable>
         ) : (
           <View style={styles.back} />
@@ -57,5 +61,5 @@ const styles = StyleSheet.create({
   titleWrap: { flex: 1, alignItems: 'center' },
   title: { fontSize: 17, fontWeight: '700', color: Colors.text },
   subtitle: { fontSize: 12, color: Colors.textMuted, marginTop: 2 },
-  right: { width: 42, alignItems: 'flex-end' },
+  right: { minWidth: 42, paddingHorizontal: 4, alignItems: 'flex-end' },
 });

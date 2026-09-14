@@ -3,36 +3,110 @@
     "name": "동대문 종합시장 셰르파",
     "slug": "ddm-sherpa",
     "scheme": "ddmsherpa",
-    "version": "0.1.0",
+    "version": "1.0.7",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/7bc7aeed-7d3e-497f-85c9-f213b7111bc5",
+      "fallbackToCacheTimeout": 0
+    },
     "orientation": "portrait",
     "userInterfaceStyle": "light",
+    "icon": "./assets/icon.png",
     "splash": {
+      "image": "./assets/DDM-LOGO.png",
       "resizeMode": "contain",
       "backgroundColor": "#0B2E5A"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.ddmsherpa.app",
+      "buildNumber": "15",
       "usesAppleSignIn": true,
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "동대문 종합시장 내 현재 위치 기준 길안내를 위해 사용할 수 있습니다."
+        "NSPhotoLibraryUsageDescription": "사진을 포토 메모로 저장하기 위해 사진첩에 접근합니다.",
+        "NSCameraUsageDescription": "스와치 등을 촬영하여 포토 메모로 저장하기 위해 카메라에 접근합니다.",
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLSchemes": [
+              "com.googleusercontent.apps.387030473505-3flrftq1bid8ka63t4i2fj06jc96h5ha"
+            ]
+          }
+        ]
       }
     },
     "android": {
       "package": "com.ddmsherpa.app",
+      "googleServicesFile": "./google-services.json",
+      "versionCode": 29,
+      "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0B2E5A"
-      }
+      },
+      "permissions": []
     },
     "web": {
       "bundler": "metro"
     },
     "plugins": [
       "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/DDM-LOGO.png",
+          "imageWidth": 280,
+          "resizeMode": "contain",
+          "backgroundColor": "#0B2E5A"
+        }
+      ],
       "expo-secure-store",
       "expo-font",
-      "expo-apple-authentication"
+      "expo-apple-authentication",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "사진을 포토 메모로 저장하기 위해 사진첩에 접근합니다.",
+          "cameraPermission": "스와치 등을 촬영하여 포토 메모로 저장하기 위해 카메라에 접근합니다."
+        }
+      ],
+      "expo-web-browser",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "QR 코드 스캔을 위해 카메라에 접근합니다."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#0B2E5A",
+          "defaultChannel": "default"
+        }
+      ],
+      "expo-video",
+      "expo-localization",
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-1684179007402876~5098995619",
+          "iosAppId": "ca-app-pub-1684179007402876~1668032396",
+          "userTrackingPermission": "광고 효과 측정을 위해 기기 정보 사용에 동의해 주세요. 거부해도 광고는 표시됩니다."
+        }
+      ],
+      [
+        "@sentry/react-native/expo",
+        {
+          "organization": "heimin",
+          "project": "ddm-sherpa",
+          "url": "https://sentry.io/"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": false
@@ -40,7 +114,27 @@
     "extra": {
       "router": {
         "origin": false
+      },
+      "eas": {
+        "projectId": "7bc7aeed-7d3e-497f-85c9-f213b7111bc5"
+      },
+      "deeplApiKey": "2dc0ea88-66f5-44a1-9c62-fcfd4effcdea:fx",
+      "revenueCat": {
+        "iosApiKey": "appl_elYdvsMWhQHgJYsfwTOkOhlxPdY",
+        "androidApiKey": "goog_mAfXoQjfhanmCkiAzTcNQwdwEsF",
+        "entitlementId": "premium",
+        "productMonthly": "premium_monthly",
+        "productLifetime": "premium_lifetime"
+      },
+      "admob": {
+        "androidAppId": "ca-app-pub-1684179007402876~5098995619",
+        "iosAppId": "ca-app-pub-1684179007402876~1668032396",
+        "androidBannerUnitId": "ca-app-pub-1684179007402876/2118900055",
+        "iosBannerUnitId": "ca-app-pub-1684179007402876/6616117064",
+        "androidInterstitialUnitId": "ca-app-pub-1684179007402876/9932976741",
+        "iosInterstitialUnitId": "ca-app-pub-1684179007402876/3989953726"
       }
-    }
+    },
+    "owner": "heiminstudio"
   }
 }

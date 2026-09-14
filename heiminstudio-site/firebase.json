@@ -1,0 +1,43 @@
+{
+  "hosting": {
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "inject-screenshots.js",
+      "build-static.js",
+      "index.bundle.html",
+      "images/original/**"
+    ],
+    "headers": [
+      {
+        "source": "**/*.@(png|jpg|jpeg|svg|webp|woff|woff2|js|css)",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=31536000, immutable"
+          }
+        ]
+      },
+      {
+        "source": "**/*.html",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=300"
+          }
+        ]
+      },
+      {
+        "comment": "루트 경로(/) 는 **/*.html 글롭에 안 걸린다. 명시 안 하면 Hosting 기본 1시간 캐시가 붙어 배포 반영이 늦다.",
+        "source": "/",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=300"
+          }
+        ]
+      }
+    ]
+  }
+}

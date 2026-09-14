@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text } from 'react-native';
+import { ScrollView, StyleSheet, Text } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/common/Button';
@@ -7,6 +7,7 @@ import { TextInput } from '@/components/common/TextInput';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { Colors } from '@/constants/colors';
 import { useAuthStore } from '@/stores/authStore';
+import { showInfoAlert } from '@/utils/alerts';
 
 export default function ForgotPasswordScreen() {
   const [email, setEmail] = useState('');
@@ -19,16 +20,18 @@ export default function ForgotPasswordScreen() {
     try {
       await resetPassword(email.trim());
       setSent(true);
-      Alert.alert('안내', '비밀번호 재설정 안내를 전송했습니다. (데모 환경에서는 실제 메일이 발송되지 않습니다.)', [
-        { text: '확인', onPress: () => router.back() },
-      ]);
+      showInfoAlert(
+        '안내',
+        '비밀번호 재설정 안내를 전송했습니다. (데모 환경에서는 실제 메일이 발송되지 않습니다.)',
+        () => router.back(),
+      );
     } catch (e: any) {
       setError(e.message);
     }
   };
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
+    <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <ScreenHeader title="비밀번호 찾기" />
       <ScrollView contentContainerStyle={styles.scroll}>
         <Text style={styles.heading}>등록된 이메일을 입력해 주세요</Text>

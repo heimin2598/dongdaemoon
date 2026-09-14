@@ -8,16 +8,27 @@ import { useAuthStore } from '@/stores/authStore';
 import { useGoogleAuth } from '@/hooks/useGoogleAuth';
 import { useAppleAuth } from '@/hooks/useAppleAuth';
 import { showInfoAlert } from '@/utils/alerts';
+import { getMyLatestClaim } from '@/lib/merchantClaims';
 
 export default function SignupStoreScreen() {
   const { signInGoogle, signInApple, loading } = useAuthStore();
   const { promptGoogleSignIn } = useGoogleAuth();
   const { promptAppleSignIn, available: appleAvailable } = useAppleAuth();
 
-  const goAfterSignup = () => {
+  const goAfterSignup = async () => {
     const next = useAuthStore.getState().user;
     if (next?.role === 'merchant' && next.status !== 'active') {
-      router.replace('/(auth)/pending-approval');
+      // 기존에 매칭 신청한 적이 있는지 확인 — 있으면 pending-approval, 없으면 signup-match
+      try {
+        const claim = await getMyLatestClaim(next.id);
+        if (claim) {
+          router.replace('/(auth)/pending-approval');
+        } else {
+          router.replace('/(auth)/signup-match');
+        }
+      } catch {
+        router.replace('/(auth)/signup-match');
+      }
     } else {
       router.replace('/(tabs)/home');
     }
@@ -32,7 +43,7 @@ export default function SignupStoreScreen() {
       } else {
         await signInGoogle('merchant');
       }
-      goAfterSignup();
+      await goAfterSignup();
     } catch (e: any) {
       showInfoAlert('Google 로그인 실패', e?.message ?? '잠시 후 다시 시도해 주세요.');
     }
@@ -47,7 +58,7 @@ export default function SignupStoreScreen() {
       } else {
         await signInApple('merchant');
       }
-      goAfterSignup();
+      await goAfterSignup();
     } catch (e: any) {
       const msg = e?.message ?? '잠시 후 다시 시도해 주세요.';
       const hint = /provider|operation-not-allowed|configuration/i.test(msg)
@@ -62,7 +73,7 @@ export default function SignupStoreScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
+    <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <ScreenHeader title="매장 사장님 회원가입" />
       <ScrollView contentContainerStyle={styles.scroll}>
         <Text style={styles.heading}>매장 사장님 회원가입</Text>

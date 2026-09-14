@@ -1,0 +1,116 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isMe(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    // ─────────────────────────────────────────────
+    // users/{uid}/photoMemos/{shopCode}/{photoId}.jpg
+    // 본인만 R/W. 5MB 이하 JPEG/PNG 만 허용.
+    // ─────────────────────────────────────────────
+    match /users/{uid}/photoMemos/{shopCode}/{filename} {
+      allow read: if isMe(uid);
+      allow write: if isMe(uid)
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/(jpeg|jpg|png)');
+      allow delete: if isMe(uid);
+    }
+
+    // ─────────────────────────────────────────────
+    // partsRequests/{rid}/{photoId}.jpg
+    // 인증된 사용자만 R/W. 5MB 이하 JPEG/PNG 만 허용.
+    // (소유 검증은 Firestore rules 에서 — 글 삭제 시 작성자가 storage 도 함께 정리)
+    // ─────────────────────────────────────────────
+    match /partsRequests/{rid}/{filename} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/(jpeg|jpg|png)');
+      allow delete: if request.auth != null;
+    }
+
+    // ─────────────────────────────────────────────
+    // homeBanners/{bid}/{filename} : 홈 배너 이미지
+    // 누구나 읽기. 쓰기는 어드민만 (이메일 화이트리스트).
+    // ─────────────────────────────────────────────
+    match /homeBanners/{bid}/{filename} {
+      allow read: if true;
+      allow write, delete: if request.auth != null
+        && request.auth.token.email != null
+        && request.auth.token.email.lower() in ['heimin2598@gmail.com']
+        && (request.resource == null
+            || (request.resource.size < 8 * 1024 * 1024
+                && request.resource.contentType.matches('image/(jpeg|jpg|png)')));
+    }
+
+    // ─────────────────────────────────────────────
+    // searchBanners/{bid}/{filename} : 매장 찾기 광고 배너 이미지
+    // ─────────────────────────────────────────────
+    match /searchBanners/{bid}/{filename} {
+      allow read: if true;
+      allow write, delete: if request.auth != null
+        && request.auth.token.email != null
+        && request.auth.token.email.lower() in ['heimin2598@gmail.com']
+        && (request.resource == null
+            || (request.resource.size < 8 * 1024 * 1024
+                && request.resource.contentType.matches('image/(jpeg|jpg|png)')));
+    }
+
+    // ─────────────────────────────────────────────
+    // shops/{shopId}/products/{filename} : 매장 상품 카탈로그 사진
+    // 누구나 read (매장 상세 노출). 업로드는 인증 사용자만 + 사이즈/타입 검증.
+    // ─────────────────────────────────────────────
+    match /shops/{shopId}/products/{filename} {
+      allow read: if true;
+      allow write: if request.auth != null
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/(jpeg|jpg|png)');
+      allow delete: if request.auth != null;
+    }
+
+    // ─────────────────────────────────────────────
+    // shops/{shopId}/photos/{filename} : 매장 갤러리 사진 (사장님이 업로드)
+    // 누구나 read (매장 상세에 노출). 업로드는 인증 사용자만 — Firestore 측 photos
+    // 배열에 추가될 때 shop 소유권 검증되므로 Storage 는 사이즈/타입만 검증.
+    // ─────────────────────────────────────────────
+    match /shops/{shopId}/photos/{filename} {
+      allow read: if true;
+      allow write: if request.auth != null
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/(jpeg|jpg|png)');
+      allow delete: if request.auth != null;
+    }
+
+    // ─────────────────────────────────────────────
+    // chats/{chatId}/{filename} : 채팅 첨부 (이미지/영상)
+    // 인증된 사용자만 R/W. participants 확인은 Firestore rules + 클라이언트.
+    // 이미지: 10MB 이내, 비디오: 50MB 이내.
+    // ─────────────────────────────────────────────
+    match /chats/{chatId}/{filename} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null
+        && (
+          (request.resource.contentType.matches('image/(jpeg|jpg|png|gif|webp)')
+            && request.resource.size < 10 * 1024 * 1024)
+          || (request.resource.contentType.matches('video/(mp4|quicktime|webm)')
+              && request.resource.size < 50 * 1024 * 1024)
+        );
+      allow delete: if request.auth != null;
+    }
+
+    // ─────────────────────────────────────────────
+    // inquiries/{iid}/{filename} : 문의 첨부 파일
+    // 인증된 사용자 R/W (자기 문의에만 첨부 — 클라이언트가 검증)
+    // ─────────────────────────────────────────────
+    match /inquiries/{iid}/{filename} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null
+        && request.resource.size < 10 * 1024 * 1024
+        && request.resource.contentType.matches('(image/(jpeg|jpg|png)|application/pdf)');
+      allow delete: if request.auth != null;
+    }
+  }
+}

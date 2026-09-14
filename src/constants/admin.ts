@@ -1,13 +1,13 @@
 /**
- * 어드민 이메일 화이트리스트.
- * 이 목록의 이메일로 로그인한 사용자에게만 어드민 메뉴가 노출되고,
- * Firestore 보안 규칙도 같은 이메일을 어드민으로 인식하도록 설정해야 한다.
+ * 어드민 멤버십은 Firestore `admins/{uid}` doc 으로 관리합니다.
+ * 클라이언트 측 검사는 `useAdminsStore` 또는 `subscribeIsAdmin(uid, cb)` 를 사용하세요.
  *
- * 추후 어드민이 늘어나면 여기와 보안 규칙 양쪽에 같은 이메일을 추가한다.
+ * 아래 ADMIN_EMAILS 는 Storage Rules 의 어드민 화이트리스트와만 동기화하기 위해 남아있습니다.
+ * (Storage Rules 는 Firestore exists() 호출 불가 → 이메일 기반 체크 유지)
+ *
+ * 어드민 추가 절차:
+ *  1. Firebase Console → Authentication → 신규 어드민의 UID 복사
+ *  2. Firestore → admins/{uid} doc 추가 (email, displayName 필드)
+ *  3. (배너 이미지 업로드 등 Storage 쓰기 필요하면) 이 파일 + storage.rules 의 이메일 화이트리스트에도 추가 후 재배포
  */
 export const ADMIN_EMAILS: readonly string[] = ['heimin2598@gmail.com'];
-
-export function isAdminEmail(email: string | null | undefined): boolean {
-  if (!email) return false;
-  return ADMIN_EMAILS.includes(email.toLowerCase());
-}

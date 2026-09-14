@@ -1,0 +1,18 @@
+{
+  "projects": {
+    "default": "dongdaemoon-vscode"
+  },
+  "targets": {
+    "dongdaemoon-vscode": {
+      "hosting": {
+        "app": [
+          "dongdaemoon-vscode"
+        ],
+        "heiminstudio": [
+          "heiminstudio"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}

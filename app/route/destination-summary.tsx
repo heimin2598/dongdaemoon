@@ -2,6 +2,7 @@ import React, { useMemo, useRef } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { ChevronRight } from 'lucide-react-native';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { Button } from '@/components/common/Button';
 import { MapCanvas } from '@/components/map/MapCanvas';
@@ -72,7 +73,7 @@ export default function DestinationSummaryScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
+    <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <ScreenHeader title="목적지 요약" />
       <View style={styles.head}>
         <View style={[styles.badge, { backgroundColor: color.primary }]}>
@@ -100,7 +101,7 @@ export default function DestinationSummaryScreen() {
       <View style={styles.actionArea}>
         <Pressable style={styles.linkRow} onPress={() => router.push('/map-building')}>
           <Text style={styles.linkText}>지도에서 크게 보기</Text>
-          <Text style={styles.linkArrow}>›</Text>
+          <ChevronRight size={20} color={Colors.textMuted} />
         </Pressable>
         <Button label="길찾기 시작" onPress={onStart} />
       </View>

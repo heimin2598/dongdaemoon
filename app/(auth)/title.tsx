@@ -2,39 +2,55 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ResizeMode, Video } from 'expo-av';
+import { VideoView, useVideoPlayer } from 'expo-video';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/common/Button';
+import { LanguagePicker } from '@/components/common/LanguagePicker';
+
+const titleVideoSource = require('@assets/images/title_video.mp4');
 
 export default function TitleScreen() {
+  const { t } = useTranslation();
+  // expo-video 로 교체 (SDK 54 에서 expo-av deprecated). iOS 26.5 의 Swift Concurrency
+  // 호환 문제 회피용 — Apple 심사에서 반복 반려된 launch crash 의 유력 원인이었음.
+  const player = useVideoPlayer(titleVideoSource, (p) => {
+    p.loop = true;
+    p.muted = true;
+    p.play();
+  });
   return (
     <View style={styles.root}>
-      {/* 배경 비디오 (루프 + 음소거 + 자동재생) */}
-      <Video
-        source={require('@assets/images/title_video.mp4')}
+      {/* 배경 비디오 (루프 + 음소거 + 자동재생) — 터치 가로채지 않도록 pointerEvents none */}
+      <VideoView
+        player={player}
         style={StyleSheet.absoluteFill}
-        resizeMode={ResizeMode.COVER}
-        isLooping
-        isMuted
-        shouldPlay
+        contentFit="cover"
+        nativeControls={false}
+        pointerEvents="none"
       />
 
       {/* 가독성 개선용 어두운 오버레이 */}
       <View style={styles.overlay} pointerEvents="none" />
 
       <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-        {/* 상단 텍스트 블록 */}
-        <View style={styles.top}>
-          <Text style={styles.title}>동대문 종합시장</Text>
-          <Text style={styles.title}>셰르파</Text>
-          <Text style={styles.subtitle}>복잡한 동대문 종합시장이 쉬워지다</Text>
-          <Text style={styles.credit}>designed by heimin studio</Text>
+        {/* 상단: 언어 칩 (우측 정렬) + 텍스트 블록 */}
+        <View>
+          <View style={styles.langWrap}>
+            <LanguagePicker tint="#fff" />
+          </View>
+          <View style={styles.top}>
+            <Text style={styles.title}>동대문 종합시장</Text>
+            <Text style={styles.title}>셰르파</Text>
+            <Text style={styles.subtitle}>복잡한 동대문 종합시장이 쉬워지다</Text>
+            <Text style={styles.credit}>designed by heimin studio</Text>
+          </View>
         </View>
 
         {/* 하단 버튼 블록 */}
         <View style={styles.bottom}>
-          <Button label="로그인" onPress={() => router.push('/(auth)/login')} style={styles.btn} />
+          <Button label={t('auth.signIn')} onPress={() => router.push('/(auth)/login')} style={styles.btn} />
           <Button
-            label="회원가입"
+            label={t('auth.signUp')}
             variant="secondary"
             onPress={() => router.push('/(auth)/signup-select')}
             style={{ ...styles.btn, ...styles.btnSecondary }}
@@ -53,12 +69,15 @@ const styles = StyleSheet.create({
   },
   safe: {
     flex: 1,
+    zIndex: 10,
+    elevation: 10,
     paddingHorizontal: 28,
     paddingVertical: 24,
     justifyContent: 'space-between',
   },
+  langWrap: { alignItems: 'flex-end', marginTop: 4, marginBottom: 8 },
   top: {
-    marginTop: 16,
+    marginTop: 8,
   },
   title: {
     fontSize: 38,

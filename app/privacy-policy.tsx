@@ -4,13 +4,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { Colors } from '@/constants/colors';
 
-const EFFECTIVE_DATE = '2026년 4월 23일';
+const EFFECTIVE_DATE = '2026년 4월 29일';
 const CONTACT_EMAIL = 'heimin2598@gmail.com';
 const APP_NAME = '동대문 종합시장 셰르파';
 
 export default function PrivacyPolicyScreen() {
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
+    <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <ScreenHeader title="개인정보 처리방침" />
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.intro}>
@@ -32,6 +32,10 @@ export default function PrivacyPolicyScreen() {
           <Bullet>필수: 이메일 주소, 비밀번호(암호화 저장)</Bullet>
           <Bullet>선택: 표시 이름(닉네임)</Bullet>
           <Bullet>소셜 로그인 이용 시: 해당 서비스(Google, Apple 등)가 제공하는 고유 식별자 및 이메일</Bullet>
+          <Bullet>매장 사장님: 매장 전화번호, 영업시간, 매장 소개, 취급 카테고리</Bullet>
+          <Bullet>
+            이용자 게시물: 매장 리뷰·평점, 부자재 찾기 요청 글·사진, 사장님 답글, 신고 내역
+          </Bullet>
           <Bullet>
             자동 수집: 기기 식별자, 운영체제 정보, 앱 버전, 서비스 이용 기록(검색어, 목적지 등은 이용자
             단말 내부에만 저장되며 서버로 전송되지 않습니다)
@@ -111,8 +115,9 @@ export default function PrivacyPolicyScreen() {
 
         <Section title="제11조 (개인정보 보호책임자)">
           <P>이용자는 개인정보 관련 문의·민원·피해 구제 등을 아래 연락처로 요청할 수 있습니다.</P>
-          <Bullet>성명: 운영 담당자</Bullet>
+          <Bullet>성명: 정혜민 (대표)</Bullet>
           <Bullet>이메일: {CONTACT_EMAIL}</Bullet>
+          <Bullet>전화: 033-761-2560</Bullet>
         </Section>
 
         <Section title="제12조 (개인정보 처리방침의 변경)">
@@ -120,6 +125,16 @@ export default function PrivacyPolicyScreen() {
             본 처리방침은 관련 법령 및 내부 방침 변경에 따라 개정될 수 있으며, 변경 시 앱 내 공지사항을
             통해 공지합니다.
           </P>
+        </Section>
+
+        <Section title="서비스 운영자 정보">
+          <Bullet>상호: 헤이민</Bullet>
+          <Bullet>대표자: 정혜민</Bullet>
+          <Bullet>사업자등록번호: 665-38-00101</Bullet>
+          <Bullet>통신판매업 신고번호: 제 2017-강원원주-00079호</Bullet>
+          <Bullet>사업장 주소: 강원도 원주시 개운4길 1-5 3층</Bullet>
+          <Bullet>고객센터 전화: 033-761-2560</Bullet>
+          <Bullet>이메일: rothy2874@naver.com</Bullet>
         </Section>
 
         <Text style={styles.footer}>시행일: {EFFECTIVE_DATE}</Text>

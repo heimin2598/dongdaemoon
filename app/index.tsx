@@ -9,14 +9,11 @@ export default function Index() {
 
   useEffect(() => {
     if (!hydrated) return;
-    if (!user) {
-      router.replace('/(auth)/title');
-      return;
-    }
-    if (user.role === 'merchant' && user.status !== 'active') {
+    if (user && user.role === 'merchant' && user.status !== 'active') {
       router.replace('/(auth)/pending-approval');
       return;
     }
+    // 비로그인 사용자도 홈 진입 가능 (Apple 정책 5.1.1(v) — 계정 기반이 아닌 기능은 비회원도 접근 가능)
     router.replace('/(tabs)/home');
   }, [hydrated, user]);
 

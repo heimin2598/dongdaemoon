@@ -1,13 +1,17 @@
 import React, { useState } from 'react';
-import { Alert, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { showInfoAlert, showConfirmAlert } from '@/utils/alerts';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { ChevronDown, ChevronRight, ChevronUp, Mail, Megaphone, Phone } from 'lucide-react-native';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { Button } from '@/components/common/Button';
+import { LanguagePicker } from '@/components/common/LanguagePicker';
 import { Colors } from '@/constants/colors';
 import { useAuthStore } from '@/stores/authStore';
 import { useSearchStore } from '@/stores/searchStore';
 import { useFavoritesStore } from '@/stores/favoritesStore';
+import { deleteAccount } from '@/lib/auth/firebaseAuth';
 
 // 광고 문의 연락처 (출시 전 실제 번호로 교체)
 const AD_PHONE = '010-3447-2598';
@@ -20,16 +24,13 @@ export default function SettingsScreen() {
   const clearFavorites = useFavoritesStore((s) => s.clear);
   const [adOpen, setAdOpen] = useState(false);
 
-  // RN Alert.alert 는 웹에서 작동 안 하므로 window.confirm 으로 분기.
   const confirmAsync = (title: string, message: string, confirmLabel: string): Promise<boolean> => {
-    if (Platform.OS === 'web') {
-      return Promise.resolve(window.confirm(`${title}\n\n${message}`));
-    }
     return new Promise((resolve) => {
-      Alert.alert(title, message, [
-        { text: '취소', style: 'cancel', onPress: () => resolve(false) },
-        { text: confirmLabel, style: 'destructive', onPress: () => resolve(true) },
-      ]);
+      showConfirmAlert(title, message, () => resolve(true), {
+        confirmLabel,
+        destructive: true,
+        onCancel: () => resolve(false),
+      });
     });
   };
 
@@ -38,6 +39,31 @@ export default function SettingsScreen() {
     if (!ok) return;
     await signOut();
     router.replace('/(auth)/title');
+  };
+
+  const confirmDeleteAccount = async () => {
+    const ok = await confirmAsync(
+      '회원 탈퇴',
+      '회원 정보가 영구적으로 삭제됩니다. 관심 매장, 메모 등 일부 데이터는 복구할 수 없습니다.\n\n정말 탈퇴하시겠습니까?',
+      '탈퇴',
+    );
+    if (!ok) return;
+    try {
+      await deleteAccount();
+      showInfoAlert('탈퇴 완료', '계정이 삭제되었습니다. 이용해 주셔서 감사합니다.', () => {
+        router.replace('/(auth)/title');
+      });
+    } catch (e: unknown) {
+      const err = e as { code?: string; message?: string };
+      if (err?.code === 'auth/requires-recent-login') {
+        showInfoAlert(
+          '재로그인 필요',
+          '계정 삭제를 진행하려면 보안을 위해 다시 한번 로그인해야 합니다. 로그아웃 후 다시 로그인하고 시도해 주세요.',
+        );
+      } else {
+        showInfoAlert('탈퇴 실패', err?.message ?? '잠시 후 다시 시도해 주세요.');
+      }
+    }
   };
 
   const confirmClearRecent = async () => {
@@ -51,7 +77,7 @@ export default function SettingsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
+    <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <ScreenHeader title="설정" />
       <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
         {/* 광고 문의하기 */}
@@ -60,9 +86,13 @@ export default function SettingsScreen() {
             style={[styles.adBtn, adOpen && styles.adBtnOpen]}
             onPress={() => setAdOpen((v) => !v)}
           >
-            <Text style={styles.adIcon}>📢</Text>
+            <Megaphone size={20} color={Colors.primary} strokeWidth={2} />
             <Text style={styles.adBtnText}>광고 문의하기</Text>
-            <Text style={styles.adChevron}>{adOpen ? '▴' : '▾'}</Text>
+            {adOpen ? (
+              <ChevronUp size={20} color={Colors.textMuted} />
+            ) : (
+              <ChevronDown size={20} color={Colors.textMuted} />
+            )}
           </Pressable>
 
           {adOpen && (
@@ -71,28 +101,34 @@ export default function SettingsScreen() {
                 style={styles.adRow}
                 onPress={() => Linking.openURL(`tel:${AD_PHONE_DIGITS}`).catch(() => {})}
               >
-                <Text style={styles.adRowIcon}>📞</Text>
+                <Phone size={18} color={Colors.primary} strokeWidth={2} />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.adRowLabel}>전화</Text>
                   <Text style={styles.adRowPhone}>{AD_PHONE}</Text>
                 </View>
-                <Text style={styles.adRowArrow}>›</Text>
+                <ChevronRight size={18} color={Colors.textMuted} />
               </Pressable>
               <View style={styles.adDivider} />
               <Pressable
                 style={styles.adRow}
                 onPress={() => Linking.openURL(`mailto:${AD_EMAIL}?subject=%5B%EA%B4%91%EA%B3%A0%20%EB%AC%B8%EC%9D%98%5D`).catch(() => {})}
               >
-                <Text style={styles.adRowIcon}>📧</Text>
+                <Mail size={18} color={Colors.primary} strokeWidth={2} />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.adRowLabel}>이메일</Text>
                   <Text style={styles.adRowEmail}>{AD_EMAIL}</Text>
                 </View>
-                <Text style={styles.adRowArrow}>›</Text>
+                <ChevronRight size={18} color={Colors.textMuted} />
               </Pressable>
             </View>
           )}
         </View>
+
+        <Section title="언어 / Language">
+          <View style={{ paddingVertical: 4 }}>
+            <LanguagePicker variant="row" />
+          </View>
+        </Section>
 
         <Section title="데이터">
           <Row label="최근 검색·목적지 삭제" onPress={confirmClearRecent} />
@@ -106,28 +142,27 @@ export default function SettingsScreen() {
             onPress={() => {
               const msg =
                 '업체 정보 변경(상호, 전화번호, 카테고리 등) 또는 신규업체 등록이 필요하시면\n아래 이메일로 신청해 주세요.\n\n📧 heimin2598@gmail.com';
-              if (Platform.OS === 'web') {
-                if (typeof window !== 'undefined' && window.confirm(msg + '\n\n메일 앱을 여시겠습니까?')) {
+              showConfirmAlert(
+                '업체 정보 변경 및 신규 등록',
+                msg,
+                () => {
                   Linking.openURL('mailto:heimin2598@gmail.com?subject=%5B%EC%97%85%EC%B2%B4%20%EC%A0%95%EB%B3%B4%20%EB%B3%80%EA%B2%BD%20%EB%B0%8F%20%EC%8B%A0%EA%B7%9C%EC%97%85%EC%B2%B4%20%EB%93%B1%EB%A1%9D%5D').catch(() => {});
-                }
-              } else {
-                Alert.alert('업체 정보 변경 및 신규 등록', msg, [
-                  { text: '취소', style: 'cancel' },
-                  {
-                    text: '메일 보내기',
-                    onPress: () =>
-                      Linking.openURL('mailto:heimin2598@gmail.com?subject=%5B%EC%97%85%EC%B2%B4%20%EC%A0%95%EB%B3%B4%20%EB%B3%80%EA%B2%BD%20%EB%B0%8F%20%EC%8B%A0%EA%B7%9C%EC%97%85%EC%B2%B4%20%EB%93%B1%EB%A1%9D%5D').catch(() => {}),
-                  },
-                ]);
-              }
+                },
+                { confirmLabel: '메일 보내기' },
+              );
             }}
           />
           <Row label="개인정보 처리방침" onPress={() => router.push('/privacy-policy')} />
           <Row label="이용약관" onPress={() => router.push('/terms-of-service')} />
         </Section>
 
-        <View style={{ padding: 16, paddingTop: 24 }}>
+        <View style={{ padding: 16, paddingTop: 24, gap: 10 }}>
           <Button label="로그아웃" variant="danger" onPress={confirmSignOut} />
+          <Pressable onPress={confirmDeleteAccount} style={{ paddingVertical: 12, alignItems: 'center' }}>
+            <Text style={{ color: Colors.textMuted, fontSize: 13, fontWeight: '700', textDecorationLine: 'underline' }}>
+              회원 탈퇴
+            </Text>
+          </Pressable>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -147,7 +182,7 @@ function Row({ label, onPress }: { label: string; onPress: () => void }) {
   return (
     <Pressable style={rowStyles.row} onPress={onPress}>
       <Text style={rowStyles.label}>{label}</Text>
-      <Text style={rowStyles.arrow}>›</Text>
+      <ChevronRight size={18} color={Colors.textMuted} />
     </Pressable>
   );
 }

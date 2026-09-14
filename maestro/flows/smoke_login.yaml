@@ -1,0 +1,12 @@
+appId: com.ddmsherpa.app
+---
+- launchApp:
+    clearState: true
+- assertVisible: "동대문 종합시장"
+- assertVisible: "로그인"
+- assertVisible: "회원가입"
+- takeScreenshot: title
+- tapOn: "로그인"
+- waitForAnimationToEnd
+- assertVisible: "다시 오신 걸"
+- takeScreenshot: login_page

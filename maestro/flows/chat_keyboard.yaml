@@ -1,0 +1,35 @@
+appId: com.ddmsherpa.app
+---
+- launchApp:
+    clearState: true
+- assertVisible: "동대문 종합시장"
+- tapOn: "로그인"
+- waitForAnimationToEnd
+- tapOn:
+    id: "emailInput"
+- inputText: "test@naver.com"
+- tapOn:
+    id: "passwordInput"
+- inputText: "123456"
+- hideKeyboard
+- tapOn: "로그인"
+- waitForAnimationToEnd
+- assertVisible: "어디를 찾으시나요?"
+- tapOn:
+    text: "MY"
+- tapOn: "내 채팅"
+- waitForAnimationToEnd
+- tapOn:
+    text: "테스트"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: chat_open
+- tapOn:
+    id: "chatInput"
+- takeScreenshot: chat_keyboard_open
+- inputText: "자동화 테스트 메시지"
+- takeScreenshot: chat_typing
+- tapOn:
+    id: "chatSendBtn"
+- waitForAnimationToEnd
+- takeScreenshot: chat_after_send
