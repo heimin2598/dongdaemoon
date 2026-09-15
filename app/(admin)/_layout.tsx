@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Dimensions, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router, Slot, usePathname } from 'expo-router';
 import {
+  ArrowUpCircle,
   BarChart3,
   Gift,
   Image as ImageIcon,
@@ -72,6 +73,7 @@ const NAV_ITEMS: NavItem[] = [
   { key: 'promo-codes', label: '프로모션 코드', icon: Gift, path: '/admin-promo-codes', section: '콘텐츠' },
   { key: 'inquiries', label: '문의 관리', icon: MessageCircle, path: '/admin-inquiries', section: '고객 응대' },
   { key: 'ad-inquiries', label: '광고 문의', icon: Megaphone, path: '/admin-ad-inquiries', section: '고객 응대' },
+  { key: 'app-version', label: '앱 버전', icon: ArrowUpCircle, path: '/admin-app-version', section: '운영' },
 ];
 
 export default function AdminGroupLayout() {

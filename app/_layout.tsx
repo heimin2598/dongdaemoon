@@ -40,6 +40,7 @@ import { initAds } from '@/lib/ads';
 import { Colors } from '@/constants/colors';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { PendingCustomerRequestModal } from '@/components/common/PendingCustomerRequestModal';
+import { AppUpdateGate } from '@/components/common/AppUpdateGate';
 
 function useProtectedRoute() {
   const segments = useSegments();
@@ -182,6 +183,7 @@ function RootLayoutInner() {
             }}
           />
           <PendingCustomerRequestModal />
+          <AppUpdateGate />
         </ErrorBoundary>
       </SafeAreaProvider>
     </GestureHandlerRootView>

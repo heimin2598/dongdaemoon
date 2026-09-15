@@ -12,6 +12,7 @@ import {
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
+  ArrowUpCircle,
   ArrowUpRight,
   BarChart3,
   Bell,
@@ -298,6 +299,7 @@ export default function AdminDashboard() {
             <MenuCard Icon={MessageCircle} label="문의 관리" desc="일반 문의 답변 및 상태" onPress={() => router.push('/admin-inquiries')} />
             <MenuCard Icon={Megaphone} label="광고 문의" desc="광고 제휴 문의 관리" onPress={() => router.push('/admin-ad-inquiries')} />
             <MenuCard Icon={BarChart3} label="통계" desc="회원 · 매출 · 사용량 분석" onPress={() => router.push('/admin-stats')} />
+            <MenuCard Icon={ArrowUpCircle} label="앱 버전" desc="업데이트 안내 · 강제 업데이트" onPress={() => router.push('/admin-app-version')} />
           </View>
 
           <View style={{ height: 48 }} />
