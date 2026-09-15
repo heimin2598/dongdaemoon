@@ -15,3 +15,4 @@ web-build/
 .env.*
 .DS_Store
 .auto-backup.log
+dist-web/
