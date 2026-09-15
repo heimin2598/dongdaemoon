@@ -28,6 +28,11 @@
   },
   "submit": {
     "production": {
+      "android": {
+        "serviceAccountKeyPath": "C:/Users/1/Desktop/heimin-studio-play-3eac51f36f62.json",
+        "track": "production",
+        "releaseStatus": "completed"
+      },
       "ios": {
         "ascAppId": "6773212200",
         "appleTeamId": "MBLVGADG5T"
