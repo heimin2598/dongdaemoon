@@ -29,7 +29,7 @@
   "submit": {
     "production": {
       "android": {
-        "serviceAccountKeyPath": "C:/Users/1/Desktop/heimin-studio-play-76d9443f302a.json",
+        "serviceAccountKeyPath": "C:/Users/1/.secrets/ddm-sherpa-play-service-account.json",
         "track": "production",
         "releaseStatus": "completed"
       },
