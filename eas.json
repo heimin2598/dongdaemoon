@@ -35,7 +35,10 @@
       },
       "ios": {
         "ascAppId": "6773212200",
-        "appleTeamId": "MBLVGADG5T"
+        "appleTeamId": "MBLVGADG5T",
+        "ascApiKeyPath": "C:/Users/1/.secrets/AuthKey_8NLQSUV7S8.p8",
+        "ascApiKeyId": "8NLQSUV7S8",
+        "ascApiKeyIssuerId": "30c36f70-5d09-4b93-8fb0-4bb0e9e8c13c"
       }
     }
   }
