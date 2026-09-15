@@ -29,7 +29,7 @@
   "submit": {
     "production": {
       "android": {
-        "serviceAccountKeyPath": "C:/Users/1/Desktop/heimin-studio-play-3eac51f36f62.json",
+        "serviceAccountKeyPath": "C:/Users/1/Desktop/heimin-studio-play-76d9443f302a.json",
         "track": "production",
         "releaseStatus": "completed"
       },
