@@ -3,7 +3,7 @@
     "name": "동대문 종합시장 셰르파",
     "slug": "ddm-sherpa",
     "scheme": "ddmsherpa",
-    "version": "1.0.7",
+    "version": "1.0.8",
     "runtimeVersion": {
       "policy": "appVersion"
     },
