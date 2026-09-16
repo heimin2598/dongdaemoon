@@ -65,21 +65,39 @@
           "backgroundColor": "#0B2E5A"
         }
       ],
-      "expo-secure-store",
+      [
+        "expo-secure-store",
+        {
+          "faceIDPermission": false
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "현재 위치를 지도에 표시하고 매장까지 길을 안내하기 위해 위치 정보를 사용합니다.",
+          "locationAlwaysAndWhenInUsePermission": false,
+          "locationAlwaysPermission": false,
+          "isIosBackgroundLocationEnabled": false,
+          "isAndroidBackgroundLocationEnabled": false
+        }
+      ],
       "expo-font",
       "expo-apple-authentication",
       [
         "expo-image-picker",
         {
           "photosPermission": "사진을 포토 메모로 저장하기 위해 사진첩에 접근합니다.",
-          "cameraPermission": "스와치 등을 촬영하여 포토 메모로 저장하기 위해 카메라에 접근합니다."
+          "cameraPermission": "스와치 등을 촬영하여 포토 메모로 저장하기 위해 카메라에 접근합니다.",
+          "microphonePermission": false
         }
       ],
       "expo-web-browser",
       [
         "expo-camera",
         {
-          "cameraPermission": "QR 코드 스캔을 위해 카메라에 접근합니다."
+          "cameraPermission": "QR 코드 스캔을 위해 카메라에 접근합니다.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false
         }
       ],
       [
