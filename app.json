@@ -3,7 +3,7 @@
     "name": "동대문 종합시장 셰르파",
     "slug": "ddm-sherpa",
     "scheme": "ddmsherpa",
-    "version": "1.0.8",
+    "version": "1.0.9",
     "runtimeVersion": {
       "policy": "appVersion"
     },
@@ -112,8 +112,8 @@
       [
         "react-native-google-mobile-ads",
         {
-          "androidAppId": "ca-app-pub-1684179007402876~5098995619",
-          "iosAppId": "ca-app-pub-1684179007402876~1668032396",
+          "androidAppId": "ca-app-pub-7684280029715926~3953079020",
+          "iosAppId": "ca-app-pub-7684280029715926~3326393066",
           "userTrackingPermission": "광고 효과 측정을 위해 기기 정보 사용에 동의해 주세요. 거부해도 광고는 표시됩니다."
         }
       ],
@@ -145,12 +145,12 @@
         "productLifetime": "premium_lifetime"
       },
       "admob": {
-        "androidAppId": "ca-app-pub-1684179007402876~5098995619",
-        "iosAppId": "ca-app-pub-1684179007402876~1668032396",
-        "androidBannerUnitId": "ca-app-pub-1684179007402876/2118900055",
-        "iosBannerUnitId": "ca-app-pub-1684179007402876/6616117064",
-        "androidInterstitialUnitId": "ca-app-pub-1684179007402876/9932976741",
-        "iosInterstitialUnitId": "ca-app-pub-1684179007402876/3989953726"
+        "androidAppId": "ca-app-pub-7684280029715926~3953079020",
+        "iosAppId": "ca-app-pub-7684280029715926~3326393066",
+        "androidBannerUnitId": "ca-app-pub-7684280029715926/5014879252",
+        "iosBannerUnitId": "ca-app-pub-7684280029715926/5037350973",
+        "androidInterstitialUnitId": "ca-app-pub-7684280029715926/7361840996",
+        "iosInterstitialUnitId": "ca-app-pub-7684280029715926/3532697614"
       }
     },
     "owner": "heiminstudio"
