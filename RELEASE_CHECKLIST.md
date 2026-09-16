@@ -6,6 +6,14 @@
 
 ## 📋 출시 진행 로그 (Release Log)
 
+### 2026-09-16 — 1.0.8 (Android vc 33 / iOS build 21)
+- ✅ **Android 프로덕션 출시** — vc 33, 한국어 출시 노트 등록
+- ✅ **iOS 재제출** — 첫 제출(build 20)이 `NSMicrophoneUsageDescription` 플레이스홀더로 자동 반려. 권한 제거 후 build 21 로 재제출, `WAITING_FOR_REVIEW`
+- ✅ **안드로이드 푸시 복구** — Firebase 에 Android 앱이 없어 `google-services.json` 자체가 없었고 푸시가 전혀 동작하지 않았다. 실기기 수신까지 확인
+- ✅ **OTA 활성화** — `expo-updates` + `runtimeVersion: appVersion`. 이후 JS 수정은 `eas update --branch production` 으로 즉시 배포
+- ✅ **업데이트 유도 팝업** — `settings/global.appVersion` 정책 기반. 관리자 콘솔 → 앱 버전에서 설정
+- ⏳ **다음 Android 빌드에 자동 반영될 것** — `RECORD_AUDIO` 권한 제거 (`recordAudioAndroid: false`). vc 33 에는 아직 포함돼 있어 Play 앱 정보에 "마이크"가 표시된다. 별도 조치 불필요, 다음 릴리스에 따라 나간다
+
 ### 2026-05-25 — Closed Alpha 준비 완료
 - ✅ **versionCode 5 AAB** Play Console 업로드 (Internal Testing). Closed Testing 트랙으로 promote 준비.
 - ✅ **스플래시 로고 확대** — `app.json` 의 splash 와 `expo-splash-screen` plugin 으로 `imageWidth: 280` 적용. DDM-LOGO.png 화면 폭 ~78% 노출. dev APK 검증 완료. production AAB 재빌드는 EAS 무료 쿼터 리셋 (6/1) 후 versionCode 6.
@@ -21,6 +29,9 @@
 
 ## 0. 환경 사전 확인
 
+- [ ] **iOS 권한 문구 점검** — `npx expo config --type introspect | grep -iE "UsageDescription|RECORD_AUDIO"`
+      영문 `Allow $(PRODUCT_NAME)...` 이 하나라도 남아 있으면 App Store 자동 반려 대상.
+      정상 상태는 사진첩·카메라·위치(WhenInUse) 3개뿐이며 전부 한국어.
 - [ ] 인터넷(Wi-Fi) 정상 연결
 - [ ] Firebase 콘솔에서 `firestore.rules` / `storage.rules` 최신 배포 상태
 - [ ] `admins/{내UID}` doc 존재 (어드민 메뉴 노출 조건)
