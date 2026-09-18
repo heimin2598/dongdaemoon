@@ -9,7 +9,8 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Crown, ImageOff, MessageSquare, Plus } from 'lucide-react-native';
+import { ChevronLeft, Crown, ImageOff, MessageSquare, Plus } from 'lucide-react-native';
+import { showInfoAlert } from '@/utils/alerts';
 import { Colors } from '@/constants/colors';
 import { useAuthStore } from '@/stores/authStore';
 import { useBlocksStore } from '@/stores/blocksStore';
@@ -146,7 +147,13 @@ export default function PartsFeedScreen() {
 
   const onCreate = () => {
     if (!user) {
-      router.push('/(auth)/login');
+      // 아무 설명 없이 로그인 화면으로 보내면 왜 튕겼는지 알 수 없다.
+      showInfoAlert(
+        '로그인이 필요해요',
+        '부자재 요청을 올리려면 로그인이 필요합니다.',
+        () => router.push('/(auth)/login'),
+        '로그인하기',
+      );
       return;
     }
     if (!isPremium) {
@@ -161,6 +168,7 @@ export default function PartsFeedScreen() {
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
         <View style={styles.header}>
+          <PartsBackButton />
           <Text style={styles.headerTitle}>{partsTitle}</Text>
           <Text style={styles.headerSub}>프리미엄 회원 전용 기능입니다</Text>
         </View>
@@ -191,6 +199,7 @@ export default function PartsFeedScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.header}>
+        <PartsBackButton />
         <Text style={styles.headerTitle}>{partsTitle}</Text>
         <Text style={styles.headerSub}>
           {isMerchantActive
@@ -264,6 +273,19 @@ export default function PartsFeedScreen() {
   );
 }
 
+/**
+ * 방문자에게는 부자재 탭이 탭바에서 숨겨져(href: null) 있어 홈 카드로만 들어온다.
+ * 그 경우 활성 탭 표시도 없고 빠져나갈 버튼도 없어 갇힌 느낌이 된다.
+ */
+function PartsBackButton() {
+  if (!router.canGoBack()) return null;
+  return (
+    <Pressable onPress={() => router.back()} hitSlop={12} style={styles.headerBack}>
+      <ChevronLeft size={26} color={Colors.text} strokeWidth={2} />
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: Colors.background },
   header: {
@@ -274,6 +296,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
+  headerBack: { marginLeft: -8, marginBottom: 2, alignSelf: 'flex-start' },
   headerTitle: { fontSize: 20, fontWeight: '800', color: Colors.text },
   headerSub: { fontSize: 12, color: Colors.textMuted, marginTop: 4, fontWeight: '600' },
 

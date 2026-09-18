@@ -20,6 +20,7 @@ const AD_EMAIL = 'rothy2874@naver.com';
 
 export default function SettingsScreen() {
   const signOut = useAuthStore((s) => s.signOut);
+  const user = useAuthStore((s) => s.user);
   const clearRecent = useSearchStore((s) => s.clearRecent);
   const clearFavorites = useFavoritesStore((s) => s.clear);
   const [adOpen, setAdOpen] = useState(false);
@@ -156,14 +157,21 @@ export default function SettingsScreen() {
           <Row label="이용약관" onPress={() => router.push('/terms-of-service')} />
         </Section>
 
-        <View style={{ padding: 16, paddingTop: 24, gap: 10 }}>
-          <Button label="로그아웃" variant="danger" onPress={confirmSignOut} />
-          <Pressable onPress={confirmDeleteAccount} style={{ paddingVertical: 12, alignItems: 'center' }}>
-            <Text style={{ color: Colors.textMuted, fontSize: 13, fontWeight: '700', textDecorationLine: 'underline' }}>
-              회원 탈퇴
-            </Text>
-          </Pressable>
-        </View>
+        {/* 비회원에게 로그아웃·회원 탈퇴는 의미가 없다. 로그인 유도로 대체한다. */}
+        {user ? (
+          <View style={{ padding: 16, paddingTop: 24, gap: 10 }}>
+            <Button label="로그아웃" variant="danger" onPress={confirmSignOut} />
+            <Pressable onPress={confirmDeleteAccount} style={{ paddingVertical: 12, alignItems: 'center' }}>
+              <Text style={{ color: Colors.textMuted, fontSize: 13, fontWeight: '700', textDecorationLine: 'underline' }}>
+                회원 탈퇴
+              </Text>
+            </Pressable>
+          </View>
+        ) : (
+          <View style={{ padding: 16, paddingTop: 24 }}>
+            <Button label="로그인" onPress={() => router.push('/(auth)/login')} />
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );

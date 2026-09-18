@@ -86,8 +86,8 @@ export default function MyTab() {
           <View style={styles.guestCard}>
             <Text style={styles.guestTitle}>비회원으로 둘러보고 계세요</Text>
             <Text style={styles.guestDesc}>
-              매장 검색·길안내·지도 보기는 자유롭게 사용하실 수 있어요.{'\n'}
-              관심 매장, 메모, 메신저, 부자재 신청 등의 기능을 사용하려면 로그인이 필요합니다.
+              매장 검색·길안내·지도 보기·관심 매장은 자유롭게 사용하실 수 있어요.{'\n'}
+              메모, 메신저, 부자재 신청 등의 기능을 사용하려면 로그인이 필요합니다.
             </Text>
             <View style={styles.guestBtnRow}>
               <Pressable style={styles.guestBtnPrimary} onPress={() => router.push('/(auth)/login')}>
@@ -308,7 +308,8 @@ export default function MyTab() {
             hint={`${favoritesCount}개`}
             onPress={() => router.push('/favorites')}
           />
-          {!isAdmin && (
+          {/* 차단 목록은 로그인 계정에 붙는다. 비회원에게는 항상 빈 화면이라 감춘다. */}
+          {!isAdmin && !!user && (
             <MenuItem
               Icon={Shield}
               label="차단 사용자 관리"
@@ -318,7 +319,7 @@ export default function MyTab() {
           )}
           <MenuItem
             Icon={Settings}
-            label="설정 및 문의"
+            label="설정"
             onPress={() => router.push('/settings')}
           />
         </View>
