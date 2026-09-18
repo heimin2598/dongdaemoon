@@ -1,10 +1,11 @@
 import { BuildingCode, FloorCode } from '@/types';
+import { FLOOR_LABEL } from '@/constants/floors';
 import directoryJson from './directory.json';
 import categoryTreeJson from './category_tree.json';
 import { MainCategory, Store } from './types';
 
 /**
- * 동대문 종합시장 전체 점포 디렉터리 (3,662개)
+ * 동대문 종합시장 전체 점포 디렉터리 (3,689개)
  * - JSON은 번들 시점에 로드됨
  * - 인덱스는 첫 접근 시 lazy 구축되어 메모리에 캐시됨
  */
@@ -91,6 +92,25 @@ export function getStoreByCode(code: string): Store | undefined {
 
 export function getStoreById(id: number): Store | undefined {
   return STORES.find((s) => s.id === id);
+}
+
+/**
+ * 화면에 보여줄 위치 문자열.
+ * directory.json 의 `location` 은 "B동 4F 062호" 처럼 층 코드가 박혀 있어
+ * 같은 화면 안에서도 "4층"/"4F" 가 섞인다. building/floor 가 있으면 항상
+ * 조합해서 한글 층 표기로 통일하고, 없을 때만 원본 문자열로 떨어진다.
+ */
+export function formatStoreLocation(s: {
+  building?: BuildingCode | string | null;
+  floor?: FloorCode | string | null;
+  unit?: string | null;
+  location?: string | null;
+}): string {
+  const floorLabel = s.floor ? FLOOR_LABEL[s.floor as FloorCode] : undefined;
+  if (s.building && floorLabel) {
+    return `${s.building}동 ${floorLabel}${s.unit ? ` ${s.unit}호` : ''}`;
+  }
+  return s.location ?? '';
 }
 
 export function getStoresByBuildingFloor(building: BuildingCode, floor: FloorCode): Store[] {

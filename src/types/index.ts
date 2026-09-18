@@ -293,7 +293,7 @@ export interface PartsReply {
 
 /**
  * 매장 사장님이 가입 후 어떤 매장과 연동할지 신청하는 클레임.
- * - 'existing': 정적 디렉터리(3,662개) 의 storeCode 에 매칭
+ * - 'existing': 정적 디렉터리(3,689개) 의 storeCode 에 매칭
  * - 'new': 디렉터리에 없는 신규 매장 — 운영자가 승인 시 매장 DB 에도 추가
  *
  * 흐름:

@@ -17,7 +17,7 @@ import { TextInput } from '@/components/common/TextInput';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { Colors } from '@/constants/colors';
 import { useAuthStore } from '@/stores/authStore';
-import { searchStores } from '@/data/stores';
+import { formatStoreLocation, searchStores } from '@/data/stores';
 import type { Store } from '@/data/stores/types';
 import { createMerchantClaim } from '@/lib/merchantClaims';
 import { showInfoAlert } from '@/utils/alerts';
@@ -26,7 +26,7 @@ type Tab = 'existing' | 'new';
 
 /**
  * 매장 매칭 페이지 — 사장님 회원가입 직후 진입.
- * - 기존 업체 찾기: 디렉터리(3,662개) 검색 → 선택 → 매칭 신청
+ * - 기존 업체 찾기: 디렉터리(3,689개) 검색 → 선택 → 매칭 신청
  * - 직접 등록: 신규 매장 정보 입력 → 신청 (운영자 승인 시 매장 DB 등록)
  * 신청 완료 시 pending-approval 로 이동.
  */
@@ -185,7 +185,7 @@ export default function SignupMatchScreen() {
                           {s.name || '(상호 없음)'}
                         </Text>
                         <Text style={styles.resultMeta} numberOfLines={1}>
-                          {s.location || `${s.building ?? ''}동 ${s.floor ?? ''} ${s.unit ?? ''}`.trim()}
+                          {formatStoreLocation(s)}
                           {s.phone ? ` · ${s.phone}` : ''}
                         </Text>
                       </View>

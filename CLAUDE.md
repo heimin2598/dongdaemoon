@@ -36,7 +36,7 @@
 ## 프로젝트 컨텍스트
 
 - **앱 이름**: 동대문 종합시장 셰르파 (DDM Sherpa)
-- **목적**: 동대문 종합시장 3,662개 점포 가이드 / 길안내 / 사장님-방문자 매칭
+- **목적**: 동대문 종합시장 3,689개 점포 가이드 / 길안내 / 사장님-방문자 매칭
 - **스택**: React Native + Expo SDK 54, Firebase (Auth/Firestore/Storage), Zustand, expo-router
 - **사업자**: 헤이민 / 정혜민 / 665-38-00101 (강원도 원주시 개운4길 1-5 3층)
 - **운영자**: heimin2598@gmail.com (Firestore `admins/{uid}` 컬렉션으로 권한 부여)
@@ -60,7 +60,7 @@ src/
     firebase.web.ts        # 웹 진입 (browserLocalPersistence)
     auth/firebaseAuth.ts   # users/{uid} 관리
   stores/                  # zustand
-  data/stores/             # 정적 점포 디렉터리 3,662개 + 카테고리
+  data/stores/             # 정적 점포 디렉터리 3,689개 + 카테고리
 constants/                 # Colors, FLOORS, BUILDING_ORDER, etc
 ```
 

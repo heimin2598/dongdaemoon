@@ -32,7 +32,7 @@ import { PhoneIcon } from '@/components/common/PhoneIcon';
 import { PaywallSheet } from '@/components/common/PaywallSheet';
 import { Colors, BuildingColors } from '@/constants/colors';
 import { FLOOR_LABEL } from '@/constants/floors';
-import { getStoreByCode, parseKeywordTags } from '@/data/stores';
+import { formatStoreLocation, getStoreByCode, parseKeywordTags } from '@/data/stores';
 import type { Store } from '@/data/stores/types';
 import { useFavoritesStore } from '@/stores/favoritesStore';
 import { useMemosStore } from '@/stores/memosStore';
@@ -490,8 +490,7 @@ export default function StoreDetailScreen() {
               <View style={{ flex: 1 }}>
                 <Text style={styles.contactCardLabel}>위치</Text>
                 <Text style={styles.contactCardValue} numberOfLines={2}>
-                  {store.location ??
-                    `${building ?? ''}동 ${floor ? FLOOR_LABEL[floor] : ''}${store.unit ? ` ${store.unit}호` : ''}`.trim()}
+                  {formatStoreLocation({ ...store, building, floor })}
                 </Text>
               </View>
             </View>

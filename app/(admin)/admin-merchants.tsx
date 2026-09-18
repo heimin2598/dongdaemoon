@@ -28,7 +28,7 @@ import {
   resetClaimToPending,
 } from '@/lib/merchantClaims';
 import { deleteShop, listAllShops, setShopVerified } from '@/lib/shops';
-import { getStoreByCode } from '@/data/stores';
+import { formatStoreLocation, getStoreByCode } from '@/data/stores';
 import { showConfirmAlert, showInfoAlert } from '@/utils/alerts';
 import type { MerchantClaim, Shop } from '@/types';
 
@@ -329,9 +329,7 @@ function ClaimCard({
   const storeName = isNew ? (c.newStore?.name ?? '-') : (dir?.name ?? c.storeCode ?? '-');
   const storeLoc = isNew
     ? (c.newStore?.address ?? '-')
-    : (dir?.location ??
-      (`${dir?.building ?? ''} ${dir?.floor ?? ''} ${dir?.unit ?? ''}`.trim() ||
-       '-'));
+    : (dir ? formatStoreLocation(dir) || '-' : '-');
   const storePhone = isNew ? (c.newStore?.phone ?? '-') : (dir?.phone ?? '-');
 
   const callApplicant = () => {

@@ -12,7 +12,7 @@ import { subscribeToProfile } from '@/lib/auth/firebaseAuth';
 import { subscribeMyLatestClaim } from '@/lib/merchantClaims';
 import { showInfoAlert } from '@/utils/alerts';
 import { APPROVAL_PENDING_FLAG } from '@/constants/approval';
-import { getStoreByCode } from '@/data/stores';
+import { formatStoreLocation, getStoreByCode } from '@/data/stores';
 import type { MerchantClaim } from '@/types';
 
 export default function PendingApprovalScreen() {
@@ -99,9 +99,7 @@ export default function PendingApprovalScreen() {
     ? (storeFromDirectory?.name ?? claim.storeCode ?? '-')
     : (claim?.newStore?.name ?? '-');
   const storeLocation = claim?.claimType === 'existing'
-    ? (storeFromDirectory?.location ??
-       (`${storeFromDirectory?.building ?? ''} ${storeFromDirectory?.floor ?? ''} ${storeFromDirectory?.unit ?? ''}`.trim() ||
-        '-'))
+    ? (storeFromDirectory ? formatStoreLocation(storeFromDirectory) || '-' : '-')
     : (claim?.newStore?.address ?? '-');
 
   if (!claimLoaded) {

@@ -4,6 +4,7 @@ import Constants from 'expo-constants';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { Colors } from '@/constants/colors';
+import { countStores } from '@/data/stores';
 
 const APP_NAME = '동대문 종합시장 셰르파';
 const APP_NAME_EN = 'DDM Sherpa';
@@ -45,8 +46,8 @@ export default function AppInfoScreen() {
         <Section title="서비스 소개">
           <P>
             {APP_NAME}는 동대문 종합시장을 방문하는 분들이 원하는 점포와 편의시설을 쉽게 찾을 수 있도록
-            돕는 가이드 앱입니다. 3,662여 개 업체 정보와 층별 배치도, 실내 길안내, 관심 매장 관리까지
-            한 앱에서 제공합니다.
+            돕는 가이드 앱입니다. {countStores().toLocaleString()}개 업체 정보와 층별 배치도, 실내 길안내,
+            관심 매장 관리까지 한 앱에서 제공합니다.
           </P>
         </Section>
 
