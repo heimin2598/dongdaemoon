@@ -1,6 +1,6 @@
-import React, { useRef, useState } from 'react';
-import { Dimensions, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
-import { router } from 'expo-router';
+import React, { useCallback, useRef, useState } from 'react';
+import { BackHandler, Dimensions, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { router, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeft } from 'lucide-react-native';
 import { FloorSelector } from '@/components/map/FloorSelector';
@@ -11,15 +11,37 @@ import { Colors, BuildingColors } from '@/constants/colors';
 import { BUILDING_ORDER } from '@/constants/buildings';
 import { FLOOR_LABEL } from '@/constants/floors';
 import { useMapStore } from '@/stores/mapStore';
+import { useEntitlement } from '@/hooks/useEntitlement';
+import { maybeShowInterstitial } from '@/lib/ads';
 import { getFloorMap } from '@/data/maps';
 import { BuildingCode } from '@/types';
 
 export default function MapFloorScreen() {
   const { selectedFloor, setFloor, setBuilding } = useMapStore();
+  const { isPremium } = useEntitlement();
   const [visibleBuilding, setVisibleBuilding] = useState<BuildingCode>('B');
   const [pageWidth, setPageWidth] = useState(Dimensions.get('window').width);
   const listRef = useRef<FlatList<BuildingCode>>(null);
   const zoomRefs = useRef<Record<BuildingCode, ZoomableMapHandle | null>>({ A: null, B: null, C: null, N: null });
+
+  const onBack = useCallback(() => {
+    if (!isPremium) {
+      maybeShowInterstitial('mapFloorBack', 3).catch(() => {});
+    }
+    if (router.canGoBack()) router.back();
+    else router.replace('/(tabs)/home');
+  }, [isPremium]);
+
+  // 헤더 화살표와 Android 하드웨어 ◁ 가 같은 경로를 타야 슬롯 카운트가 정확하다.
+  useFocusEffect(
+    useCallback(() => {
+      const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+        onBack();
+        return true;
+      });
+      return () => sub.remove();
+    }, [onBack]),
+  );
 
   const onScrollEnd = (e: any) => {
     const idx = Math.round(e.nativeEvent.contentOffset.x / pageWidth);
@@ -34,7 +56,7 @@ export default function MapFloorScreen() {
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <View style={styles.header}>
         <Pressable
-          onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))}
+          onPress={onBack}
           hitSlop={12}
           style={styles.backBtn}
         >

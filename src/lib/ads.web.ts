@@ -15,3 +15,6 @@ export async function initAds(): Promise<void> {}
 export async function showInterstitial(): Promise<boolean> {
   return false;
 }
+export async function maybeShowInterstitial(_slot: string, _everyN: number): Promise<boolean> {
+  return false;
+}

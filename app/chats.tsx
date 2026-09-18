@@ -31,6 +31,15 @@ export default function ChatsListScreen() {
   const { isPremium, loading: entLoading } = useEntitlement();
   const isMerchantActive = user?.role === 'merchant' && user?.status === 'active';
 
+  useEffect(() => {
+    if (!FEATURE_MESSENGER_ENABLED) return;
+    if (!user) return;
+    // 사장님은 항상 메신저 사용. visitor 는 premium 만.
+    if (!isMerchantActive && !isPremium) return;
+    const unsub = subscribeMyChats(user.id, setChats);
+    return () => unsub();
+  }, [user, isMerchantActive, isPremium]);
+
   // 메신저 전체 비활성 — 매장 사장님 정식 가입 완료 전까지 사용 제한
   if (!FEATURE_MESSENGER_ENABLED) {
     return (
@@ -46,14 +55,6 @@ export default function ChatsListScreen() {
       </SafeAreaView>
     );
   }
-
-  useEffect(() => {
-    if (!user) return;
-    // 사장님은 항상 메신저 사용. visitor 는 premium 만.
-    if (!isMerchantActive && !isPremium) return;
-    const unsub = subscribeMyChats(user.id, setChats);
-    return () => unsub();
-  }, [user, isMerchantActive, isPremium]);
 
   if (!user) {
     return (

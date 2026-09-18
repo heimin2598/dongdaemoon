@@ -85,11 +85,11 @@ export default function StoreDetailScreen() {
   const { isPremium } = useEntitlement();
   const currentUser = useAuthStore((s) => s.user);
 
-  // 매장 상세에서 뒤로가기 → free 사용자에게 3회마다 1회 전면광고 (60초 내 재노출 방지).
+  // 매장 상세에서 뒤로가기 → free 사용자에게 2회마다 1회 전면광고 (간격·상한은 ads.ts).
   // ScreenHeader 의 화살표, Android 하드웨어 ◁ 둘 다 같은 경로 통해 처리.
   const onBack = useCallback(() => {
     if (!isPremium) {
-      maybeShowInterstitial('storeDetailBack', 3).catch(() => {});
+      maybeShowInterstitial('storeDetailBack', 2).catch(() => {});
     }
     if (router.canGoBack()) router.back();
     else router.replace('/(tabs)/home');

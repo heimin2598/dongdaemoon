@@ -11,10 +11,13 @@ import { Colors, BuildingColors } from '@/constants/colors';
 import { FLOOR_LABEL } from '@/constants/floors';
 import { getFloorMap } from '@/data/maps';
 import { useRouteStore } from '@/stores/routeStore';
+import { useEntitlement } from '@/hooks/useEntitlement';
+import { maybeShowInterstitial } from '@/lib/ads';
 import { BuildingCode, FloorCode } from '@/types';
 
 export default function NavigationScreen() {
   const { origin, destination, route, reset } = useRouteStore();
+  const { isPremium } = useEntitlement();
   const [viewIndex, setViewIndex] = useState(0);
 
   // 경로가 거치는 (building, floor) 조합 목록
@@ -161,6 +164,11 @@ export default function NavigationScreen() {
 
       <View style={styles.footer}>
         <Button label="안내 종료" variant="secondary" onPress={() => {
+          // 길안내가 끝난 시점 = 사용자가 화면을 떠나는 자연스러운 전환점.
+          // 안내 "도중"에는 절대 띄우지 않는다 — 이 앱의 핵심 동선이다.
+          if (!isPremium) {
+            maybeShowInterstitial('routeEnd', 1).catch(() => {});
+          }
           reset();
           router.replace('/(tabs)/home');
         }} />
