@@ -48,11 +48,16 @@ export function interstitialUnitId(): string {
   );
 }
 
+interface MobileAdsInstance {
+  initialize(): Promise<unknown>;
+  setRequestConfiguration(opts: { testDeviceIdentifiers?: string[] }): Promise<unknown>;
+}
+
 interface AdsModule {
-  default: {
-    initialize(): Promise<unknown>;
-    setRequestConfiguration(opts: { testDeviceIdentifiers?: string[] }): Promise<unknown>;
-  };
+  // default export 는 인스턴스가 아니라 **함수** 다 (`MobileAds()`).
+  // 객체처럼 `m.default.initialize()` 로 부르면 undefined 호출로 던지고,
+  // catch 에 먹혀 _initialized 가 false 로 남아 전면광고가 영영 로드되지 않는다.
+  default: () => MobileAdsInstance;
   InterstitialAd: {
     createForAdRequest(
       adUnitId: string,
@@ -103,16 +108,23 @@ export async function initAds(): Promise<void> {
   if (Platform.OS === 'ios') {
     await new Promise((r) => setTimeout(r, 1500));
   }
-  try {
-    // 릴리스 빌드를 우리 기기로 검수할 때 실광고가 뜨면 무효 트래픽으로 계정이 제한된다.
-    // app.json 의 extra.admob.testDeviceIds 에 기기 해시를 넣으면 그 기기만 테스트 광고를 받는다.
-    // 해시 = 그 기기 광고 ID(AAID) 의 MD5 대문자. 릴리스 빌드 logcat 의
-    // "setTestDeviceIds" 줄에 찍히는 값과 같아야 한다 (빌드 후 대조할 것).
-    const testIds = adConfig?.testDeviceIds;
-    if (Array.isArray(testIds) && testIds.length > 0) {
-      await m.default.setRequestConfiguration({ testDeviceIdentifiers: testIds });
+  const ads = m.default();
+
+  // 릴리스 빌드를 우리 기기로 검수할 때 실광고가 뜨면 무효 트래픽으로 계정이 제한된다.
+  // app.json 의 extra.admob.testDeviceIds 에 기기 해시를 넣으면 그 기기만 테스트 광고를 받는다.
+  // 해시 = 그 기기 광고 ID(AAID) 의 MD5 대문자.
+  // 실패해도 initialize 는 반드시 진행해야 한다 — 여기서 막히면 전면광고가 통째로 죽는다.
+  const testIds = adConfig?.testDeviceIds;
+  if (Array.isArray(testIds) && testIds.length > 0) {
+    try {
+      await ads.setRequestConfiguration({ testDeviceIdentifiers: testIds });
+    } catch {
+      // 테스트 기기 지정 실패는 치명적이지 않다. AdMob 콘솔 등록이 별도 안전망이다.
     }
-    await m.default.initialize();
+  }
+
+  try {
+    await ads.initialize();
     _initialized = true;
     preloadInterstitial();
   } catch {
