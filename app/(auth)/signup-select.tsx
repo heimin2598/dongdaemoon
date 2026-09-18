@@ -41,7 +41,7 @@ export default function SignupSelectScreen() {
         </Text>
 
         <Text style={styles.legalNotice}>
-          회원가입을 진행하면{' '}
+          회원가입에는{' '}
           <Text style={styles.legalLink} onPress={() => router.push('/terms-of-service')}>
             이용약관
           </Text>
@@ -49,7 +49,7 @@ export default function SignupSelectScreen() {
           <Text style={styles.legalLink} onPress={() => router.push('/privacy-policy')}>
             개인정보처리방침
           </Text>
-          에 동의하는 것으로 간주됩니다.
+          에 동의가 필요합니다.
         </Text>
       </ScrollView>
     </SafeAreaView>

@@ -95,6 +95,20 @@ export default function SignupScreen() {
           />
         </View>
 
+        {/* 소셜 가입은 이메일 가입과 달리 동의 체크박스를 거치지 않는다.
+            약관 고지가 이 화면에 없으면 구글·애플 경로에는 고지 자체가 없게 된다. */}
+        <Text style={styles.legal}>
+          구글·애플 계정으로 가입하면{' '}
+          <Text style={styles.link} onPress={() => router.push('/terms-of-service')}>
+            이용약관
+          </Text>
+          {' 및 '}
+          <Text style={styles.link} onPress={() => router.push('/privacy-policy')}>
+            개인정보처리방침
+          </Text>
+          에 동의하는 것으로 봅니다. 이메일 가입은 다음 화면에서 동의를 확인합니다.
+        </Text>
+
         <Text style={styles.footer}>이미 계정이 있으신가요? <Text style={styles.link} onPress={() => router.replace('/(auth)/login')}>로그인</Text></Text>
       </ScrollView>
     </SafeAreaView>
@@ -157,6 +171,13 @@ const styles = StyleSheet.create({
   },
   iconText: { fontSize: 16, fontWeight: '900' },
   providerLabel: { flex: 1, fontSize: 15, fontWeight: '700', textAlign: 'center' },
-  footer: { marginTop: 28, fontSize: 13, color: Colors.textMuted, textAlign: 'center' },
+  legal: {
+    marginTop: 24,
+    fontSize: 12,
+    lineHeight: 18,
+    color: Colors.textMuted,
+    textAlign: 'center',
+  },
+  footer: { marginTop: 16, fontSize: 13, color: Colors.textMuted, textAlign: 'center' },
   link: { color: Colors.primary, fontWeight: '700' },
 });
