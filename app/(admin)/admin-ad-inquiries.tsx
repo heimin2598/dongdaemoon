@@ -197,6 +197,7 @@ const styles = StyleSheet.create({
 
   filterRow: {
     gap: 8,
+    alignItems: 'center',
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 8,

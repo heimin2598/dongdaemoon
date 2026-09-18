@@ -66,6 +66,7 @@ export default function NavigationScreen() {
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
+          style={styles.segScroll}
           contentContainerStyle={styles.segRow}
         >
           {floorSegments.map((s, idx) => {
@@ -121,10 +122,10 @@ export default function NavigationScreen() {
             {destination.name ?? destination.unitNumber ?? '목적지'} ({destination.building}동 {FLOOR_LABEL[destination.floor]})
           </Text>
         </View>
-        {route && (
+        {route && route.steps.length > 0 && (
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>예상 이동 비용</Text>
-            <Text style={styles.infoValue}>{route.totalWeight}</Text>
+            <Text style={styles.infoLabel}>안내 단계</Text>
+            <Text style={styles.infoValue}>{route.steps.length}단계</Text>
           </View>
         )}
       </View>
@@ -192,7 +193,9 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: Colors.background },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
   emptyText: { color: Colors.textMuted, fontSize: 14 },
-  segRow: { paddingHorizontal: 16, paddingVertical: 6, gap: 6 },
+  // 가로 ScrollView 는 부모 column 에서 세로로 팽창하고 칩이 stretch 로 늘어난다.
+  segScroll: { flexGrow: 0, flexShrink: 0 },
+  segRow: { paddingHorizontal: 16, paddingVertical: 6, gap: 6, alignItems: 'center' },
   segChip: {
     paddingHorizontal: 12,
     paddingVertical: 6,

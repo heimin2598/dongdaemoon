@@ -628,7 +628,7 @@ function Row({ label, value }: { label: string; value: string }) {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: Colors.background },
   tabsWrap: { borderBottomWidth: 1, borderBottomColor: Colors.divider, backgroundColor: Colors.surface },
-  tabs: { paddingHorizontal: 14, paddingVertical: 10, gap: 8 },
+  tabs: { paddingHorizontal: 14, paddingVertical: 10, gap: 8, alignItems: 'center' },
   tabPill: {
     paddingHorizontal: 14,
     paddingVertical: 8,

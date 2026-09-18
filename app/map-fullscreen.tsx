@@ -118,6 +118,7 @@ export default function MapFullscreenScreen() {
 
       <MapControls
         showZoomButtons={false}
+        edgeToEdge
         onZoomIn={() => zoomRef.current?.zoomIn()}
         onZoomOut={() => zoomRef.current?.zoomOut()}
         onReset={() => zoomRef.current?.reset()}

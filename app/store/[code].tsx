@@ -627,6 +627,7 @@ function ActionRow({
   const toggleFav = useFavoritesStore((s) => s.toggle);
   const isFav = favoriteCodes.includes(shopCode);
   const agg = useReviewsStore((s) => s.aggBy[shopCode]);
+  const dirStore = getStoreByCode(shopCode);
 
   const onToggleFav = async () => {
     // 관심 매장은 free 사용자도 사용 가능 (락 해제)
@@ -644,6 +645,21 @@ function ActionRow({
     router.push({
       pathname: '/store/reviews/[code]',
       params: { code: shopCode },
+    });
+  };
+
+  // 길안내는 destination-summary 가 출발점인데 앱 어디에서도 이리로 들어오는 경로가
+  // 없어서 기능 전체가 도달 불가였다. 디렉터리에 없는 신규 등록 매장은 좌표가 없어 제외.
+  const onFindRoute = () => {
+    if (!dirStore) return;
+    router.push({
+      pathname: '/route/destination-summary',
+      params: {
+        building: dirStore.building,
+        floor: dirStore.floor,
+        unit: dirStore.unit,
+        name: dirStore.name,
+      },
     });
   };
 
@@ -678,6 +694,8 @@ function ActionRow({
           <Text style={styles.actionCardLabel}>리뷰 {reviewCount}개</Text>
         </Pressable>
       </View>
+
+      {dirStore && <Button label="여기까지 길찾기" onPress={onFindRoute} />}
 
       {/* hidden — 기존 호환 */}
       <View style={{ display: 'none' }}>

@@ -11,6 +11,11 @@ interface Props {
   onExitFullscreen?: () => void;
   /** false면 +/-/리셋 버튼 숨김 (기본 true) */
   showZoomButtons?: boolean;
+  /**
+   * 화면 맨 아래에 직접 얹히는 경우(SafeAreaView 바깥)에만 true.
+   * 카드 안에 얹을 때 켜면 하단 인셋이 이중 적용돼 컨트롤이 지도 한가운데로 떠오른다.
+   */
+  edgeToEdge?: boolean;
 }
 
 /**
@@ -23,9 +28,10 @@ export function MapControls({
   onFullscreen,
   onExitFullscreen,
   showZoomButtons = true,
+  edgeToEdge = false,
 }: Props) {
   const insets = useSafeAreaInsets();
-  const bottom = 12 + insets.bottom;
+  const bottom = 12 + (edgeToEdge ? insets.bottom : 0);
   return (
     <>
       {/* 좌측 하단: 줌 컨트롤 (showZoomButtons=true면 +/-/리셋, false면 리셋만) */}

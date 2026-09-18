@@ -495,7 +495,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: { fontSize: 14, fontWeight: '700', color: Colors.text },
 
-  shopChipRow: { gap: 8, paddingVertical: 4 },
+  shopChipRow: { gap: 8, paddingVertical: 4, alignItems: 'center' },
   shopChip: {
     paddingHorizontal: 12,
     paddingVertical: 6,

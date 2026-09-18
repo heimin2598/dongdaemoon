@@ -142,7 +142,6 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.border,
   },
   backBtn: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
-  backText: { fontSize: 28, color: Colors.text, fontWeight: '300', marginTop: -4 },
   headerTitle: { fontSize: 16, fontWeight: '800', color: Colors.text },
   headerSub: { fontSize: 11, color: Colors.textMuted, marginTop: 2 },
   homeBtn: { paddingHorizontal: 12, height: 32, borderRadius: 8, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.divider },

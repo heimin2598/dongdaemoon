@@ -16,6 +16,7 @@ export function FloorSelector({ value, onChange, direction = 'vertical' }: Props
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
+        style={styles.hScroll}
         contentContainerStyle={styles.hContainer}
       >
         {FLOORS.map((f) => {
@@ -56,10 +57,18 @@ export function FloorSelector({ value, onChange, direction = 'vertical' }: Props
 }
 
 const styles = StyleSheet.create({
+  // 가로 ScrollView 는 부모 column 안에서 세로로 늘어나고, 그러면 칩이 cross-axis
+  // stretch 로 화면 절반까지 뻗는다. flexGrow:0 로 높이를 내용에 맞추고
+  // alignItems:center 로 칩 자체도 내용 높이를 유지시킨다.
+  hScroll: {
+    flexGrow: 0,
+    flexShrink: 0,
+  },
   hContainer: {
     paddingHorizontal: 16,
     gap: 8,
     paddingVertical: 6,
+    alignItems: 'center',
   },
   hChip: {
     paddingHorizontal: 14,

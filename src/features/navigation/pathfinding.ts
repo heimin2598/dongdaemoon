@@ -1,5 +1,7 @@
 import { NAV_EDGES, NAV_NODES } from '@/data/navigation';
-import { NavEdge, NavNode, Route, RouteStep } from '@/types';
+import { FACILITY_LABEL } from '@/constants/facilities';
+import { FLOOR_LABEL } from '@/constants/floors';
+import { FacilityType, NavEdge, NavNode, Route, RouteStep } from '@/types';
 
 interface Graph {
   nodes: Map<string, NavNode>;
@@ -71,18 +73,31 @@ function edgeBetween(a: string, b: string): NavEdge | null {
   );
 }
 
+// 노드 42개 중 28개가 label 이 없다. 그대로 두면 'B_1F_EV 방향으로 이동하세요'
+// 처럼 내부 ID 가 안내 문구에 그대로 노출된다.
+function nodeLabel(n: NavNode): string {
+  if (n.label) return n.label;
+  const facility = FACILITY_LABEL[n.type as FacilityType];
+  if (facility) return facility;
+  return `${n.building}동 ${n.floor}`;
+}
+
 function stepText(prev: NavNode, next: NavNode, mode?: NavEdge['mode']): string {
-  const dest = next.label ?? next.id;
+  const dest = nodeLabel(next);
   if (prev.floor !== next.floor) {
     const direction = floorIndex(next.floor) > floorIndex(prev.floor) ? '올라가' : '내려가';
+    const floorText = FLOOR_LABEL[next.floor] ?? next.floor;
     const modeText =
       mode === 'elevator' ? '엘리베이터로' :
       mode === 'escalator' ? '에스컬레이터로' :
       mode === 'stairs' ? '계단으로' : '';
-    return `${next.building}동 ${next.floor}까지 ${modeText} ${direction}세요. (${dest})`;
+    // 수단이 문장에 이미 나오면 뒤에 같은 말을 괄호로 또 붙이지 않는다.
+    return modeText
+      ? `${next.building}동 ${floorText}까지 ${modeText} ${direction}세요.`
+      : `${next.building}동 ${floorText}까지 ${direction}세요. (${dest})`;
   }
   if (prev.building !== next.building) {
-    return `${next.building}동으로 이동하세요 (${dest}).`;
+    return `${next.building}동으로 이동하세요. (${dest})`;
   }
   if (mode === 'corridor') {
     return `연결통로를 따라 ${dest}로 이동하세요.`;
