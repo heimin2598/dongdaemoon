@@ -168,7 +168,7 @@ export default function PartsFeedScreen() {
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
         <View style={styles.header}>
-          <PartsBackButton />
+          {!isMerchantActive && <PartsBackButton />}
           <Text style={styles.headerTitle}>{partsTitle}</Text>
           <Text style={styles.headerSub}>프리미엄 회원 전용 기능입니다</Text>
         </View>
@@ -199,7 +199,7 @@ export default function PartsFeedScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.header}>
-        <PartsBackButton />
+        {!isMerchantActive && <PartsBackButton />}
         <Text style={styles.headerTitle}>{partsTitle}</Text>
         <Text style={styles.headerSub}>
           {isMerchantActive
@@ -276,6 +276,7 @@ export default function PartsFeedScreen() {
 /**
  * 방문자에게는 부자재 탭이 탭바에서 숨겨져(href: null) 있어 홈 카드로만 들어온다.
  * 그 경우 활성 탭 표시도 없고 빠져나갈 버튼도 없어 갇힌 느낌이 된다.
+ * 사장님은 탭바에 이 탭이 있으므로 호출 측에서 걸러 표시하지 않는다.
  */
 function PartsBackButton() {
   if (!router.canGoBack()) return null;

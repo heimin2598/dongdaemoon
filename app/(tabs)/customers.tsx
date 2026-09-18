@@ -280,7 +280,7 @@ export default function CustomersTab() {
   if (!user) {
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
-        <ScreenHeader title="고객관리" />
+        <ScreenHeader title="고객관리" showBack={false} />
         <View style={styles.center}>
           <Text style={styles.muted}>로그인이 필요합니다.</Text>
         </View>
@@ -290,13 +290,13 @@ export default function CustomersTab() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <ScreenHeader title="고객관리" />
+      <ScreenHeader title="고객관리" showBack={false} />
 
       <View style={styles.toolbar}>
         <View style={styles.searchInputWrap}>
           <SearchIcon size={16} color={Colors.textMuted} strokeWidth={2.2} />
           <RNTextInput
-            placeholder="등록 고객 이름·메모 검색 또는 5자 ID 로 신규 추가"
+            placeholder="이름·메모 검색 · 5자 ID 로 추가"
             placeholderTextColor={Colors.textMuted}
             value={search}
             onChangeText={setSearch}

@@ -161,6 +161,9 @@ export default function HomeScreen() {
   const favoriteCodes = useFavoritesStore((s) => s.codes);
   const user = useAuthStore((s) => s.user);
   const [myShops, setMyShops] = useState<Shop[]>([]);
+  // 구독 도착 전 [] 를 "매장 없음" 으로 단정하면 사장님에게 "매장을 등록해 주세요" 가
+  // 뜬다. 이미 등록한 사장님은 매장이 사라진 줄 안다.
+  const [shopsLoaded, setShopsLoaded] = useState(false);
   const favoriteStores = favoriteCodes
     .map((c) => getStoreByCode(c))
     .filter((s): s is NonNullable<typeof s> => !!s);
@@ -170,7 +173,11 @@ export default function HomeScreen() {
   // 사장님은 본인 shops를 실시간 구독 — 등록 매장 수, 환영 배너에 사용
   useEffect(() => {
     if (!isMerchantActive || !user?.id) return;
-    const unsub = subscribeMyShops(user.id, setMyShops);
+    setShopsLoaded(false);
+    const unsub = subscribeMyShops(user.id, (list) => {
+      setMyShops(list);
+      setShopsLoaded(true);
+    });
     return () => unsub();
   }, [isMerchantActive, user?.id]);
 
@@ -233,9 +240,11 @@ export default function HomeScreen() {
                   {myShops[0]?.displayName ?? `${user?.displayName ?? '사장님'} 사장님`}
                 </Text>
                 <Text style={styles.mHeroSub}>
-                  {myShops.length > 0
-                    ? '오늘도 좋은 거래 되세요'
-                    : '먼저 매장을 등록해 주세요'}
+                  {!shopsLoaded
+                    ? '매장 정보를 불러오는 중이에요'
+                    : myShops.length > 0
+                      ? '오늘도 좋은 거래 되세요'
+                      : '먼저 매장을 등록해 주세요'}
                 </Text>
               </View>
               {merchantStats && myShops[0] && (() => {
@@ -259,7 +268,8 @@ export default function HomeScreen() {
               >
                 <Store size={14} color={Colors.text} strokeWidth={2.2} />
                 <Text style={styles.mHeroMetricText}>
-                  등록 매장 <Text style={styles.mHeroMetricNum}>{myShops.length}</Text>개
+                  등록 매장{' '}
+                  <Text style={styles.mHeroMetricNum}>{shopsLoaded ? myShops.length : '–'}</Text>개
                 </Text>
                 <ChevronRight size={14} color={Colors.textMuted} />
               </Pressable>
@@ -431,7 +441,7 @@ export default function HomeScreen() {
         )}
 
         {/* 사장님: 매장 관리 (레퍼런스 디자인) */}
-        {isMerchantActive && (
+        {isMerchantActive && shopsLoaded && (
           <View style={styles.mManageCard}>
             <Text style={styles.mManageTitle}>매장 관리</Text>
             {myShops.length === 0 ? (

@@ -32,13 +32,18 @@ const HOURS_48 = 48 * 60 * 60 * 1000;
 export function useMerchantHomeStats(): MerchantHomeStats | null {
   const user = useAuthStore((s) => s.user);
   const [shops, setShops] = useState<Shop[]>([]);
+  const [shopsLoaded, setShopsLoaded] = useState(false);
   const [chats, setChats] = useState<Chat[]>([]);
   const [products, setProducts] = useState<ShopProduct[]>([]);
 
   // shops
   useEffect(() => {
     if (!user) return;
-    return subscribeMyShops(user.id, setShops);
+    setShopsLoaded(false);
+    return subscribeMyShops(user.id, (list) => {
+      setShops(list);
+      setShopsLoaded(true);
+    });
   }, [user]);
 
   // chats (사장님이 받은 새 메시지 카운트)
@@ -75,6 +80,9 @@ export function useMerchantHomeStats(): MerchantHomeStats | null {
 
   return useMemo(() => {
     if (!user) return null;
+    // 구독이 오기 전 0 을 확정값처럼 보여주면 사장님이 "상품·결제수단이 사라졌다"
+    // 고 오해한다(결제수단 0 은 빨간 경고로까지 표시된다). 도착 전에는 감춘다.
+    if (!shopsLoaded) return null;
     const shop = shops[0];
     const now = Date.now();
     const cutoff = now - HOURS_48;
@@ -114,7 +122,7 @@ export function useMerchantHomeStats(): MerchantHomeStats | null {
       operatingStatusLabel: display.label,
       shop,
     };
-  }, [user, shops, chats, products, partsFeed, myCategories]);
+  }, [user, shopsLoaded, shops, chats, products, partsFeed, myCategories]);
 }
 
 /**
