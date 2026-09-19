@@ -3,7 +3,7 @@
     "name": "동대문 종합시장 셰르파",
     "slug": "ddm-sherpa",
     "scheme": "ddmsherpa",
-    "version": "1.0.9",
+    "version": "1.0.10",
     "runtimeVersion": {
       "policy": "appVersion"
     },
@@ -151,7 +151,9 @@
         "iosBannerUnitId": "ca-app-pub-7684280029715926/5037350973",
         "androidInterstitialUnitId": "ca-app-pub-7684280029715926/7361840996",
         "iosInterstitialUnitId": "ca-app-pub-7684280029715926/3532697614",
-        "testDeviceIds": ["A951E14544EC161CB22C52AA8B50898F"]
+        "testDeviceIds": [
+          "A951E14544EC161CB22C52AA8B50898F"
+        ]
       }
     },
     "owner": "heiminstudio"
