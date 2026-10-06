@@ -92,8 +92,12 @@ android {
         applicationId 'com.ddmsherpa.app'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0.0"
+        // 출시 버전의 기준은 여기가 아니다. eas.json 의 appVersionSource 가 "remote" 라
+        // EAS 가 서버에서 관리하는 값을 빌드 시점에 덮어쓴다 (autoIncrement).
+        // 아래 값은 로컬 Gradle 빌드(assembleRelease 등) 에서만 쓰이므로,
+        // 실기기 검증 APK 가 엉뚱한 버전으로 찍히지 않도록 릴리스 때 함께 맞춰 둔다.
+        versionCode 36
+        versionName "1.0.11"
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
     }
