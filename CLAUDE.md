@@ -42,7 +42,8 @@
 - **운영자**: heimin2598@gmail.com (Firestore `admins/{uid}` 컬렉션으로 권한 부여)
 - **회원 유형**: visitor (일반 방문자) / merchant (매장 사장님)
   - merchant 가입 시 status='pending' → 운영자 승인 → 'active'
-- **유료 모델**: free (30일 trial) / premium (월간 결제 예정). 부자재 찾기 / 메모 / 포토메모 는 premium 전용.
+- **유료 모델**: free / premium. premium 은 월간 구독(premium_monthly) 과 1회 결제 평생(premium_lifetime) 두 가지. 부자재 찾기 / 메모 / 포토메모 / 광고 제거 는 premium 전용. 무료 체험은 제공하지 않는다.
+- **결제 작업 규칙**: 결제·구독·환불·가격이 걸린 변경은 코드만 보지 말고 (1) 스토어 콘솔 설정 (2) 서버 반영 경로 (3) 실제 운영 데이터를 함께 확인한다. 빌드 전 `npm run check:store` 로 양쪽 스토어의 청구 주기·가격·상품 유형을 앱 표시값과 대조한다.
 
 ## 디렉터리 구조 핵심
 

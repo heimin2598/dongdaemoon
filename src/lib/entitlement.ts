@@ -11,44 +11,46 @@ import {
   Unsubscribe,
   updateDoc,
 } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import { Entitlement } from '@/types';
-
-/**
- * 결제(유료화) 정식 출시 시점 (ms epoch).
- * 이 시점 이전에 가입한 사용자는 grandfathered=true 로 평생 무료 프리미엄.
- * 결제 시스템 셋업 후 실제 출시 시점으로 교체.
- */
-const PREMIUM_LAUNCH_EPOCH_MS = 0;
+import { httpsCallable } from 'firebase/functions';
+import { db, functions } from '@/lib/firebase';
+import { Entitlement, EntitlementSource } from '@/types';
 
 export const DEFAULT_ENTITLEMENT: Entitlement = {
   plan: 'free',
   expiresAt: null,
   grandfathered: false,
   source: 'free',
-  trialUsed: false,
 };
 
 interface EntitlementDoc {
   plan: 'free' | 'premium';
   expiresAt: number | null;
   grandfathered: boolean;
-  source: 'free' | 'apple' | 'google' | 'manual' | 'trial' | 'promo';
-  trialUsed?: boolean;
+  source: EntitlementSource;
+  productId?: string | null;
+  environment?: 'PRODUCTION' | 'SANDBOX' | null;
   updatedAt?: unknown;
 }
 
+/**
+ * 프리미엄 활성 판정.
+ *
+ * 불변식: **영구 권한 신호는 `grandfathered` 하나뿐이다.**
+ * 기간제 프리미엄(구독)은 반드시 숫자 expiresAt 을 가져야 한다.
+ * 예전에는 `expiresAt == null` 을 영구로 봤는데, webhook 이 만료일 없는 갱신 이벤트를
+ * 받으면 구독자가 조용히 영구 프리미엄이 되는 구멍이었다.
+ */
 export function isActivePremium(e: Entitlement | undefined | null): boolean {
   if (!e) return false;
   if (e.plan !== 'premium') return false;
   if (e.grandfathered) return true;
-  if (!e.expiresAt) return true;
+  if (typeof e.expiresAt !== 'number') return false;
   return e.expiresAt > Date.now();
 }
 
-/** 트라이얼 남은 일수 (만료/free 면 0). */
-export function trialDaysRemaining(e: Entitlement | undefined | null): number {
-  if (!e || e.plan !== 'premium' || e.grandfathered || !e.expiresAt) return 0;
+/** 기간제 프리미엄 남은 일수 (영구/만료/free 면 0). */
+export function premiumDaysRemaining(e: Entitlement | undefined | null): number {
+  if (!e || e.plan !== 'premium' || e.grandfathered || typeof e.expiresAt !== 'number') return 0;
   const ms = e.expiresAt - Date.now();
   if (ms <= 0) return 0;
   return Math.ceil(ms / (24 * 60 * 60 * 1000));
@@ -60,8 +62,23 @@ function entitlementFromDoc(data: EntitlementDoc): Entitlement {
     expiresAt: typeof data.expiresAt === 'number' ? data.expiresAt : null,
     grandfathered: !!data.grandfathered,
     source: data.source ?? 'free',
-    trialUsed: !!data.trialUsed,
+    productId: data.productId ?? null,
+    environment: data.environment ?? null,
   };
+}
+
+/**
+ * 서버(RevenueCat) 를 진실로 삼아 내 entitlement 를 다시 계산시킨다.
+ *
+ * webhook 이 유일한 경로일 때 생기는 구멍을 메운다:
+ *  - 복원(restore) 은 새 트랜잭션이 아니라 webhook 이 오지 않는다
+ *  - webhook 이 실패/지연되면 결제했는데 권한이 안 생긴 상태로 남는다
+ * 결제·복원 직후, 그리고 프리미엄인데 권한이 안 보일 때 호출한다.
+ */
+export async function syncEntitlementFromServer(): Promise<Entitlement> {
+  const call = httpsCallable<unknown, { entitlement: EntitlementDoc }>(functions, 'syncEntitlement');
+  const res = await call({});
+  return entitlementFromDoc(res.data.entitlement);
 }
 
 export async function readEntitlement(uid: string): Promise<Entitlement> {
@@ -84,23 +101,21 @@ export function subscribeEntitlement(
 }
 
 /**
- * 신규 가입 직후 entitlement doc 생성.
- *  - 결제 출시 이전 가입자: grandfathered (평생 프리미엄)
- *  - 결제 출시 이후 가입자: free 로 시작. 30일 무료 체험은 paywall 에서 사용자가 직접 선택해야 활성화.
+ * 신규 가입 직후 entitlement doc 생성 — 항상 free 로 시작한다.
+ * 프리미엄으로의 전환은 전부 서버(Cloud Function) 경로다. firestore.rules 도 free create 만 허용한다.
  */
-export async function ensureEntitlementDoc(
-  uid: string,
-  createdAtMs: number,
-): Promise<Entitlement> {
+export async function ensureEntitlementDoc(uid: string): Promise<Entitlement> {
   const ref = doc(db, 'users', uid, 'meta', 'entitlement');
   const snap = await getDoc(ref);
   if (snap.exists()) {
     return entitlementFromDoc(snap.data() as EntitlementDoc);
   }
-  const grandfathered = createdAtMs <= PREMIUM_LAUNCH_EPOCH_MS;
-  const fresh: Entitlement = grandfathered
-    ? { plan: 'premium', expiresAt: null, grandfathered: true, source: 'manual', trialUsed: false }
-    : { plan: 'free', expiresAt: null, grandfathered: false, source: 'free', trialUsed: false };
+  const fresh: Entitlement = {
+    plan: 'free',
+    expiresAt: null,
+    grandfathered: false,
+    source: 'free',
+  };
   await setDoc(ref, { ...fresh, updatedAt: serverTimestamp() });
   return fresh;
 }
@@ -210,12 +225,7 @@ export async function listAllUsersWithEntitlement(): Promise<UserListItem[]> {
         const eSnap = await getDoc(doc(db, 'users', d.id, 'meta', 'entitlement'));
         if (eSnap.exists()) {
           const eData = eSnap.data() as EntitlementDoc;
-          entitlement = {
-            plan: eData.plan ?? 'free',
-            expiresAt: typeof eData.expiresAt === 'number' ? eData.expiresAt : null,
-            grandfathered: !!eData.grandfathered,
-            source: eData.source ?? 'free',
-          };
+          entitlement = entitlementFromDoc(eData);
         }
       } catch {
         // 권한 등 이슈 시 null 처리 — UI 에서 '-' 로 표시

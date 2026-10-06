@@ -10,7 +10,8 @@
     "web": "expo start --web --port 8085",
     "tunnel": "expo start --go --port 8085 --tunnel",
     "lint": "expo lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "check:store": "node scripts/check-store-products.mjs"
   },
   "dependencies": {
     "@expo/metro-runtime": "~6.1.2",

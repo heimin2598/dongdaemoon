@@ -1,0 +1,55 @@
+{
+  "packageName": "com.ddmsherpa.app",
+  "productId": "premium_monthly",
+  "basePlans": [
+    {
+      "basePlanId": "monthly-autorenewing",
+      "regionalConfigs": [
+        {
+          "regionCode": "KR",
+          "newSubscriberAvailability": true,
+          "price": {
+            "currencyCode": "KRW",
+            "units": "3900"
+          }
+        }
+      ],
+      "state": "ACTIVE",
+      "autoRenewingBasePlanType": {
+        "billingPeriodDuration": "P1M",
+        "gracePeriodDuration": "P7D",
+        "resubscribeState": "RESUBSCRIBE_STATE_ACTIVE",
+        "prorationMode": "SUBSCRIPTION_PRORATION_MODE_CHARGE_ON_NEXT_BILLING_DATE",
+        "legacyCompatible": true,
+        "legacyCompatibleSubscriptionOfferId": "first-month-free"
+      },
+      "offerTags": [
+        {
+          "tag": "monthly"
+        }
+      ]
+    }
+  ],
+  "listings": [
+    {
+      "title": "프리미엄 (월간)",
+      "benefits": [
+        "매장 메모&포토 메모 사용 가능",
+        "광고 제거"
+      ],
+      "languageCode": "en-US"
+    },
+    {
+      "title": "프리미엄 (월간)",
+      "benefits": [
+        "매장 메모·포토 메모 사용 가능",
+        "부자재 찾기 요청",
+        "광고 제거"
+      ],
+      "languageCode": "ko-KR"
+    }
+  ],
+  "taxAndComplianceSettings": {
+    "eeaWithdrawalRightType": "WITHDRAWAL_RIGHT_SERVICE"
+  }
+}

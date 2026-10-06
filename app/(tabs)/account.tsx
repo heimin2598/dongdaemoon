@@ -125,7 +125,7 @@ export default function MyTab() {
               </View>
               {isVisitor && (
                 <Pressable
-                  onPress={() => !isPremium && router.push('/paywall' as any)}
+                  onPress={() => router.push('/paywall' as any)}
                   style={[
                     styles.membershipChip,
                     isPremium ? styles.membershipChipPremium : styles.membershipChipFree,
@@ -194,20 +194,30 @@ export default function MyTab() {
 
         {user && (
           <View style={styles.menu}>
-            {isVisitor && !isPremium ? (
+            {isVisitor && !isPremium && (
               <MenuItem
                 Icon={Crown}
                 label="유료 계정 전환하기"
                 hint="프리미엄"
                 onPress={() => router.push('/paywall' as any)}
               />
-            ) : FEATURE_MESSENGER_ENABLED ? (
+            )}
+            {/* 결제한 회원이 요금제·해지 경로를 앱 안에서 찾을 수 있어야 한다 (스토어 정책). */}
+            {isPremium && (
+              <MenuItem
+                Icon={Crown}
+                label="멤버십 · 구독 관리"
+                hint="프리미엄"
+                onPress={() => router.push('/paywall' as any)}
+              />
+            )}
+            {!(isVisitor && !isPremium) && FEATURE_MESSENGER_ENABLED && (
               <MenuItem
                 Icon={MessageCircle}
                 label="내 채팅"
                 onPress={() => router.push('/chats')}
               />
-            ) : null}
+            )}
           </View>
         )}
 

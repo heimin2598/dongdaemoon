@@ -134,15 +134,19 @@ export type UserRole = 'visitor' | 'merchant';
 export type UserStatus = 'active' | 'pending' | 'rejected';
 
 export type EntitlementPlan = 'free' | 'premium';
-export type EntitlementSource = 'free' | 'apple' | 'google' | 'manual' | 'trial' | 'promo';
+export type EntitlementSource = 'free' | 'apple' | 'google' | 'manual' | 'promo';
 
 export interface Entitlement {
   plan: EntitlementPlan;
-  expiresAt: number | null;     // ms epoch, null = 영구 (grandfathered/manual) 또는 무료
-  grandfathered: boolean;       // 유료화 이전 가입자
+  /** ms epoch. 기간제 프리미엄은 반드시 숫자. null 은 "기간 없음" 이지 "영구" 가 아니다. */
+  expiresAt: number | null;
+  /** 영구 권한 신호 — 1회 결제(평생) / 프로모션 / 운영자 부여. 유일한 무기한 플래그다. */
+  grandfathered: boolean;
   source: EntitlementSource;
-  /** 30일 무료 체험을 이미 한 번 사용했는지. 한 계정당 1회만 가능. */
-  trialUsed?: boolean;
+  /** 권한 근거가 된 스토어 상품 id (문의 대응용). */
+  productId?: string | null;
+  /** SANDBOX = 테스트 결제로 부여된 권한. 매출 집계에서 제외해야 한다. */
+  environment?: 'PRODUCTION' | 'SANDBOX' | null;
   updatedAt?: number;
 }
 

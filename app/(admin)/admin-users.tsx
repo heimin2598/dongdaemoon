@@ -286,9 +286,9 @@ function UserCard({
           ? '운영자'
           : u.entitlement?.source === 'promo'
             ? '프로모션'
-            : u.entitlement?.source === 'trial'
-              ? '무료 체험'
-              : '무료';
+            : '무료';
+  // 샌드박스 결제로 붙은 권한은 실제 매출이 아니다 — 집계/정산에서 걸러낼 수 있게 표시한다.
+  const sandbox = u.entitlement?.environment === 'SANDBOX';
 
   return (
     <View style={[styles.card, u.disabled && styles.cardDisabled]}>
@@ -344,7 +344,7 @@ function UserCard({
         {active && (
           <Text style={styles.metaLine}>
             만료 · <Text style={styles.metaStrong}>{expiry ?? '-'}</Text>{' '}
-            <Text style={styles.metaMuted}>({sourceLabel})</Text>
+            <Text style={styles.metaMuted}>({sourceLabel}{sandbox ? ' · 샌드박스' : ''})</Text>
           </Text>
         )}
       </View>

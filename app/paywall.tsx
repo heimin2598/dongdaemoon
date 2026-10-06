@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Linking,
   Modal,
   Platform,
   Pressable,
@@ -16,12 +17,19 @@ import { Check, Crown, Gift, Sparkles, X, Minus } from 'lucide-react-native';
 import { Colors } from '@/constants/colors';
 import { useAuthStore } from '@/stores/authStore';
 import { useEntitlement } from '@/hooks/useEntitlement';
-import { isActivePremium, trialDaysRemaining } from '@/lib/entitlement';
 import {
+  isActivePremium,
+  premiumDaysRemaining,
+  syncEntitlementFromServer,
+} from '@/lib/entitlement';
+import {
+  getPurchasablePlans,
   presentAppleCodeRedemptionSheet,
   purchasePlan,
   purchasesAvailability,
   restorePurchases,
+  type OfferingPackage,
+  type PlanType,
 } from '@/lib/purchases';
 import {
   formatPromoCode,
@@ -47,8 +55,23 @@ const MAX_PROMO_ATTEMPTS_PER_DAY = 5;
  *  - `?fromSignup=1` → 닫기 버튼 라벨이 "무료회원으로 계속" 로 변경
  */
 
-const PRICE_MONTHLY = 3900;
-const PRICE_LIFETIME = 39000;
+/**
+ * 스토어 조회 실패 시에만 쓰는 표시용 기본값 (한국 가격).
+ * 평상시 표시 가격은 **스토어가 내려주는 priceString** 이다 — 하드코딩을 믿으면
+ * 콘솔에서 가격을 바꾸는 순간 "광고한 가격 ≠ 실제 청구" 가 되고,
+ * 해외 사용자에게는 원화가 아닌 현지 통화로 청구되는데 화면만 원화로 남는다.
+ */
+const FALLBACK_PRICE_MONTHLY = '₩3,900';
+const FALLBACK_PRICE_LIFETIME = '₩39,000';
+
+/** 스토어별 구독 관리(해지) 화면. */
+function manageSubscriptionUrl(productId?: string | null): string {
+  if (Platform.OS === 'ios') return 'https://apps.apple.com/account/subscriptions';
+  const base = 'https://play.google.com/store/account/subscriptions';
+  return productId
+    ? `${base}?sku=${encodeURIComponent(productId)}&package=com.ddmsherpa.app`
+    : base;
+}
 
 const FREE_FEATURES: Array<{ label: string; included: boolean }> = [
   { label: '매장 검색 · 길안내', included: true },
@@ -78,11 +101,37 @@ export default function PaywallScreen() {
   const params = useLocalSearchParams<{ fromSignup?: string }>();
   const fromSignup = params.fromSignup === '1';
   const { entitlement } = useEntitlement();
+  const user = useAuthStore((s) => s.user);
   const isPremium = isActivePremium(entitlement);
-  const remaining = trialDaysRemaining(entitlement);
+  const remaining = premiumDaysRemaining(entitlement);
 
   const [planPickerOpen, setPlanPickerOpen] = useState(false);
   const [promoOpen, setPromoOpen] = useState(false);
+  const [plans, setPlans] = useState<Partial<Record<PlanType, OfferingPackage>>>({});
+  const [plansLoaded, setPlansLoaded] = useState(false);
+
+  // 스토어에 실제로 올라와 있는 상품만 가격과 함께 노출한다.
+  // (안드로이드에 평생 상품이 없는데 "평생 ₩39,000 BEST" 를 띄우면 눌러도 영원히 안 되는 버튼이 된다)
+  useEffect(() => {
+    let alive = true;
+    getPurchasablePlans()
+      .then((p) => {
+        if (!alive) return;
+        setPlans(p);
+        setPlansLoaded(true);
+      })
+      .catch(() => {
+        if (alive) setPlansLoaded(true);
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const monthlyPrice = plans.monthly?.priceString ?? FALLBACK_PRICE_MONTHLY;
+  const lifetimePrice = plans.lifetime?.priceString ?? FALLBACK_PRICE_LIFETIME;
+  // 스토어 조회가 성공했는데 평생 패키지가 없으면 그 플랜은 판매하지 않는 것이다.
+  const lifetimeSold = !plansLoaded || !!plans.lifetime || !plans.monthly;
 
   const onUpgrade = () => {
     setPlanPickerOpen(true);
@@ -144,8 +193,8 @@ export default function PaywallScreen() {
           tone="premium"
           name="프리미엄 회원"
           subtitle="모든 기능 잠금해제 + 광고 제거"
-          priceText={`₩${PRICE_MONTHLY.toLocaleString()}`}
-          priceSubText={`/ 월  ·  평생 ₩${PRICE_LIFETIME.toLocaleString()}`}
+          priceText={monthlyPrice}
+          priceSubText={lifetimeSold ? `/ 월  ·  평생 ${lifetimePrice}` : '/ 월'}
           features={PREMIUM_FEATURES}
           isCurrent={isPremium}
           badge="BEST"
@@ -160,7 +209,9 @@ export default function PaywallScreen() {
         />
 
         <Text style={styles.priceNote}>
-          매월 ₩{PRICE_MONTHLY.toLocaleString()} 자동 결제 · 언제든 해지 · 평생 결제 시 1회 ₩{PRICE_LIFETIME.toLocaleString()}
+          월간은 {monthlyPrice} 가 1개월마다 자동 결제되며, 해지하기 전까지 갱신됩니다.
+          {lifetimeSold ? ` 평생은 ${lifetimePrice} 1회 결제로 갱신이 없습니다.` : ''}
+          {'\n'}해지는 결제하신 스토어(App Store · Google Play)의 구독 관리에서 언제든 가능합니다.
         </Text>
 
         {/* 플랫폼별 프로모션 코드 진입점:
@@ -171,6 +222,10 @@ export default function PaywallScreen() {
             style={styles.promoLinkBtn}
             onPress={async () => {
               if (Platform.OS === 'ios') {
+                if (!user) {
+                  showInfoAlert('로그인 필요', '코드 사용은 로그인 후 가능합니다.');
+                  return;
+                }
                 // Apple 표준 시트 — 결제 시스템 초기화 확인 후 호출
                 const avail = purchasesAvailability();
                 if (!avail.available) {
@@ -183,7 +238,7 @@ export default function PaywallScreen() {
                   return;
                 }
                 try {
-                  await presentAppleCodeRedemptionSheet();
+                  await presentAppleCodeRedemptionSheet(user.id);
                 } catch (e: unknown) {
                   const err = e as { message?: string };
                   showInfoAlert('코드 사용 불가', err?.message ?? '잠시 후 다시 시도해 주세요.');
@@ -198,6 +253,36 @@ export default function PaywallScreen() {
           </Pressable>
         )}
 
+        {/* 구독 관리 — 결제한 사용자가 해지 경로를 앱 안에서 찾을 수 있어야 한다 (스토어 정책 요구사항). */}
+        {isPremium && !entitlement.grandfathered && (
+          <Pressable
+            style={styles.manageBtn}
+            onPress={() => {
+              Linking.openURL(manageSubscriptionUrl(entitlement.productId)).catch(() => {
+                showInfoAlert(
+                  '구독 관리',
+                  Platform.OS === 'ios'
+                    ? '설정 > Apple 계정 > 구독 에서 변경·해지할 수 있습니다.'
+                    : 'Google Play > 프로필 > 결제 및 정기 결제 > 정기 결제 에서 변경·해지할 수 있습니다.',
+                );
+              });
+            }}
+          >
+            <Text style={styles.manageBtnText}>구독 관리 · 해지</Text>
+          </Pressable>
+        )}
+
+        {/* 약관·정책 링크 — 자동 갱신 구독 판매 시 App Store/Play 양쪽에서 요구한다. */}
+        <View style={styles.legalRow}>
+          <Text style={styles.legalLink} onPress={() => router.push('/terms-of-service' as any)}>
+            이용약관
+          </Text>
+          <Text style={styles.legalSep}>·</Text>
+          <Text style={styles.legalLink} onPress={() => router.push('/privacy-policy' as any)}>
+            개인정보 처리방침
+          </Text>
+        </View>
+
         <Pressable style={styles.skipBtn} onPress={onClose}>
           <Text style={styles.skipBtnText}>
             {fromSignup ? '무료 회원으로 계속하기' : '닫기'}
@@ -209,6 +294,8 @@ export default function PaywallScreen() {
         visible={planPickerOpen}
         onClose={() => setPlanPickerOpen(false)}
         closePaywall={onClose}
+        plans={plans}
+        plansLoaded={plansLoaded}
       />
 
       <PromoCodeModal
@@ -320,18 +407,67 @@ function PlanCard({
   );
 }
 
+/**
+ * 결제 성공 후 서버 반영까지 확인한다.
+ *
+ * 스토어 결제 성공 ≠ 우리 서버 권한 부여다. 사이에 RevenueCat webhook 이 있고,
+ * 그게 늦거나 실패하면 "돈은 빠졌는데 프리미엄이 아님" 상태가 된다.
+ * 그래서 성공 알림을 띄우기 전에 서버에 재계산을 시켜 확인한다.
+ * 끝내 확인 못 하면 **결제는 정상 처리됐다는 사실과 복구 방법**을 분명히 알린다.
+ */
+async function confirmServerEntitlement(): Promise<boolean> {
+  const delaysMs = [0, 1500, 4000];
+  for (const wait of delaysMs) {
+    if (wait) await new Promise((r) => setTimeout(r, wait));
+    try {
+      const e = await syncEntitlementFromServer();
+      if (isActivePremium(e)) return true;
+    } catch {
+      // 네트워크/일시 오류 — 남은 횟수만큼 재시도
+    }
+  }
+  return false;
+}
+
+const SERVER_PENDING_MSG =
+  '결제는 정상 처리되었습니다. 다만 권한 반영이 아직 확인되지 않았습니다.\n' +
+  '잠시 후 자동 반영됩니다. 그래도 프리미엄이 아니면 [이전 구매 복원] 을 눌러 주세요.\n' +
+  '중복 결제는 되지 않습니다.';
+
 function PlanPicker({
   visible,
   onClose,
   closePaywall,
+  plans,
+  plansLoaded,
 }: {
   visible: boolean;
   onClose: () => void;
   closePaywall: () => void;
+  plans: Partial<Record<PlanType, OfferingPackage>>;
+  plansLoaded: boolean;
 }) {
-  const [selected, setSelected] = useState<'monthly' | 'lifetime'>('monthly');
   const [busy, setBusy] = useState(false);
   const user = useAuthStore((s) => s.user);
+
+  // 스토어가 실제로 파는 플랜만 고를 수 있어야 한다.
+  // 조회 실패(네이티브 모듈 없음/웹 등) 면 둘 다 보여주되 시도 시 안내로 걸린다.
+  const storeKnown = plansLoaded && (!!plans.monthly || !!plans.lifetime);
+  const available: PlanType[] = storeKnown
+    ? (['monthly', 'lifetime'] as PlanType[]).filter((p) => !!plans[p])
+    : (['monthly', 'lifetime'] as PlanType[]);
+
+  const availableKey = available.join(',');
+  const [selected, setSelected] = useState<PlanType>('monthly');
+  // 스토어에 없는 플랜이 선택된 채로 남으면 눌러도 안 되는 결제 버튼이 된다.
+  useEffect(() => {
+    const list = availableKey ? (availableKey.split(',') as PlanType[]) : [];
+    if (list.length && !list.includes(selected)) setSelected(list[0]);
+  }, [availableKey, selected]);
+
+  const priceOf = (plan: PlanType) =>
+    plans[plan]?.priceString ??
+    (plan === 'monthly' ? FALLBACK_PRICE_MONTHLY : FALLBACK_PRICE_LIFETIME);
 
   const onConfirm = async () => {
     if (busy) return;
@@ -354,15 +490,18 @@ function PlanPicker({
     }
     setBusy(true);
     try {
-      const result = await purchasePlan(selected);
-      if (result.isActive) {
-        // Firestore entitlement 갱신은 RevenueCat webhook (Cloud Function) 이 admin 권한으로 처리.
-        // 스냅샷 리스너 (useEntitlement) 가 몇 초 내 자동 반영.
-        onClose();
-        closePaywall();
+      const result = await purchasePlan(selected, user.id);
+      if (!result.isActive) {
+        showInfoAlert('결제 미완료', '구매가 완료되지 않았습니다. 다시 시도해 주세요.');
+        return;
+      }
+      const confirmed = await confirmServerEntitlement();
+      onClose();
+      closePaywall();
+      if (confirmed) {
         showInfoAlert('결제 완료', '프리미엄 회원으로 전환되었습니다.');
       } else {
-        showInfoAlert('결제 미완료', '구매가 완료되지 않았습니다. 다시 시도해 주세요.');
+        showInfoAlert('결제 완료 · 반영 확인 중', SERVER_PENDING_MSG);
       }
     } catch (e: unknown) {
       const err = e as { userCancelled?: boolean; message?: string };
@@ -389,14 +528,21 @@ function PlanPicker({
     }
     setBusy(true);
     try {
-      const result = await restorePurchases();
-      if (result.isActive) {
-        // Firestore 갱신은 webhook 이 담당 — 클라이언트는 스냅샷 리스너로 몇 초 내 반영.
+      const result = await restorePurchases(user.id);
+      // 복원은 새 트랜잭션이 아니라 webhook 이 오지 않는다.
+      // 서버 재계산을 직접 시키지 않으면 RC 는 프리미엄인데 우리 DB 는 무료로 남는다.
+      const confirmed = await confirmServerEntitlement();
+      if (confirmed) {
         onClose();
         closePaywall();
         showInfoAlert('복원 완료', '프리미엄 권한이 복원되었습니다.');
+      } else if (result.isActive) {
+        showInfoAlert('복원 확인 중', SERVER_PENDING_MSG);
       } else {
-        showInfoAlert('복원 결과', '복원할 구매 내역이 없습니다.');
+        showInfoAlert(
+          '복원 결과',
+          '이 계정으로 복원할 구매 내역이 없습니다.\n결제하신 스토어 계정으로 로그인되어 있는지 확인해 주세요.',
+        );
       }
     } catch (e: unknown) {
       const err = e as { message?: string };
@@ -406,10 +552,8 @@ function PlanPicker({
     }
   };
 
-  const confirmLabel = (() => {
-    if (selected === 'lifetime') return `₩${PRICE_LIFETIME.toLocaleString()} 결제`;
-    return `월 ₩${PRICE_MONTHLY.toLocaleString()} 구독 시작`;
-  })();
+  const confirmLabel =
+    selected === 'lifetime' ? `${priceOf('lifetime')} 결제` : `${priceOf('monthly')} 구독 시작`;
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -418,37 +562,47 @@ function PlanPicker({
           <View style={pickerStyles.handle} />
           <Text style={pickerStyles.title}>요금제 선택</Text>
 
-          <Pressable
-            style={[pickerStyles.option, selected === 'monthly' && pickerStyles.optionActive]}
-            onPress={() => !busy && setSelected('monthly')}
-          >
-            <View style={{ flex: 1 }}>
-              <Text style={pickerStyles.optionTitle}>월간</Text>
-              <Text style={pickerStyles.optionDesc}>매월 자동 결제 · 언제든 해지</Text>
-            </View>
-            <Text style={pickerStyles.optionPrice}>₩{PRICE_MONTHLY.toLocaleString()}/월</Text>
-          </Pressable>
-
-          <Pressable
-            style={[pickerStyles.option, selected === 'lifetime' && pickerStyles.optionActive]}
-            onPress={() => !busy && setSelected('lifetime')}
-          >
-            <View style={{ flex: 1 }}>
-              <View style={pickerStyles.optionHead}>
-                <Text style={pickerStyles.optionTitle}>평생</Text>
-                <View style={pickerStyles.bestBadge}>
-                  <Text style={pickerStyles.bestBadgeText}>BEST</Text>
-                </View>
+          {available.includes('monthly') && (
+            <Pressable
+              style={[pickerStyles.option, selected === 'monthly' && pickerStyles.optionActive]}
+              onPress={() => !busy && setSelected('monthly')}
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={pickerStyles.optionTitle}>월간</Text>
+                <Text style={pickerStyles.optionDesc}>1개월마다 자동 결제 · 언제든 해지</Text>
               </View>
-              <Text style={pickerStyles.optionDesc}>1회 결제 · 평생 사용</Text>
-            </View>
-            <Text style={pickerStyles.optionPrice}>₩{PRICE_LIFETIME.toLocaleString()}</Text>
-          </Pressable>
+              <Text style={pickerStyles.optionPrice}>{priceOf('monthly')}/월</Text>
+            </Pressable>
+          )}
+
+          {available.includes('lifetime') && (
+            <Pressable
+              style={[pickerStyles.option, selected === 'lifetime' && pickerStyles.optionActive]}
+              onPress={() => !busy && setSelected('lifetime')}
+            >
+              <View style={{ flex: 1 }}>
+                <View style={pickerStyles.optionHead}>
+                  <Text style={pickerStyles.optionTitle}>평생</Text>
+                  <View style={pickerStyles.bestBadge}>
+                    <Text style={pickerStyles.bestBadgeText}>BEST</Text>
+                  </View>
+                </View>
+                <Text style={pickerStyles.optionDesc}>1회 결제 · 자동 갱신 없음</Text>
+              </View>
+              <Text style={pickerStyles.optionPrice}>{priceOf('lifetime')}</Text>
+            </Pressable>
+          )}
+
+          {available.length === 0 && (
+            <Text style={pickerStyles.emptyText}>
+              현재 구매 가능한 요금제를 불러오지 못했습니다.{'\n'}잠시 후 다시 시도해 주세요.
+            </Text>
+          )}
 
           <Pressable
-            style={[pickerStyles.confirmBtn, busy && { opacity: 0.6 }]}
+            style={[pickerStyles.confirmBtn, (busy || !available.length) && { opacity: 0.6 }]}
             onPress={onConfirm}
-            disabled={busy}
+            disabled={busy || !available.length}
           >
             {busy ? (
               <ActivityIndicator color="#fff" />
@@ -654,6 +808,32 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
 
+  manageBtn: {
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  manageBtnText: {
+    fontSize: 13,
+    color: Colors.primary,
+    fontWeight: '800',
+    textDecorationLine: 'underline',
+  },
+  legalRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 10,
+  },
+  legalLink: {
+    fontSize: 12,
+    color: Colors.textMuted,
+    fontWeight: '700',
+    textDecorationLine: 'underline',
+  },
+  legalSep: { fontSize: 12, color: Colors.textMuted },
+
   skipBtn: {
     paddingVertical: 14,
     alignItems: 'center',
@@ -848,6 +1028,13 @@ const pickerStyles = StyleSheet.create({
   optionTitle: { fontSize: 15, fontWeight: '900', color: Colors.text },
   optionDesc: { fontSize: 11, color: Colors.textMuted, marginTop: 2 },
   optionPrice: { fontSize: 14, fontWeight: '900', color: Colors.primary },
+  emptyText: {
+    fontSize: 13,
+    color: Colors.textMuted,
+    textAlign: 'center',
+    lineHeight: 19,
+    paddingVertical: 18,
+  },
   bestBadge: {
     paddingHorizontal: 6,
     paddingVertical: 2,

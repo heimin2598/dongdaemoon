@@ -60,30 +60,31 @@ service cloud.firestore {
       }
 
       // ─── meta/entitlement : 본인 읽기. 본인은 신규 free init 만 create 가능.
-      // 결제 상태 (premium) 로의 전환은 RevenueCat → Cloud Function webhook 이 admin 권한으로 처리.
-      // 자가 결제 우회 방지: 본인은 어떤 이유로도 premium 로 승격 불가.
+      // 결제 상태 (premium) 로의 전환은 RevenueCat → Cloud Function (admin 권한) 만 수행한다.
+      // 본인이 만들 수 있는 문서는 **무료 초기화 하나뿐**이다.
+      // (과거엔 grandfathered=true 평생 프리미엄 create 도 허용돼 있었다. 앱은 쓰지 않는
+      //  죽은 경로였지만, 토큰만 있으면 REST 로 자기 자신에게 평생 권한을 만들 수 있었다.)
       match /meta/entitlement {
         allow read: if isMe(uid) || isAdmin();
 
-        // CREATE — 신규 가입 init 만 허용
+        // CREATE — 신규 free init 만 허용
         allow create: if (isMe(uid)
-          && (
-            // Case A: 신규 free init — ensureEntitlementDoc 의 free 사용자 진입로
-            (request.resource.data.plan == 'free'
-             && request.resource.data.source == 'free'
-             && request.resource.data.grandfathered == false
-             && request.resource.data.expiresAt == null)
-            // Case B: 신규 grandfathered init — 결제 출시 이전 가입자
-            || (request.resource.data.plan == 'premium'
-                && request.resource.data.source == 'manual'
-                && request.resource.data.grandfathered == true
-                && request.resource.data.expiresAt == null)
-          )
+          && request.resource.data.plan == 'free'
+          && request.resource.data.source == 'free'
+          && request.resource.data.grandfathered == false
+          && request.resource.data.expiresAt == null
         ) || isAdmin();
 
         // UPDATE / DELETE — Cloud Function (admin) 만. 본인은 결제 상태를 직접 수정 불가.
         allow update: if isAdmin();
         allow delete: if isAdmin();
+      }
+
+      // ─── subscriptionEvents/{eventId} : 결제·해지 이벤트 이력 (webhook 이 admin 권한으로 적재).
+      // 본인/운영자 read 만. 클라이언트 쓰기는 전면 금지 — 결제 이력은 서버만 만든다.
+      match /subscriptionEvents/{eventId} {
+        allow read: if isMe(uid) || isAdmin();
+        allow write: if false;
       }
 
       // ─── meta/promoAttempts : 사용자의 하루 프로모션 코드 시도 카운트.
@@ -114,6 +115,17 @@ service cloud.firestore {
       allow create: if isAdmin();
       allow update: if isAdmin();
       allow delete: if isAdmin();
+    }
+
+    // ─────────────────────────────────────────────
+    // orphanPurchases/{eventId} : RC 신원이 익명(uid 미결속) 인 채로 들어온 결제.
+    // 돈은 빠졌는데 붙일 계정을 모르는 건이라 운영자가 수동 연결해야 한다.
+    // 적재는 webhook(admin SDK) 만. 운영자 read/update 만 허용.
+    // ─────────────────────────────────────────────
+    match /orphanPurchases/{eventId} {
+      allow read: if isAdmin();
+      allow update: if isAdmin();
+      allow create, delete: if false;
     }
 
     // ─────────────────────────────────────────────

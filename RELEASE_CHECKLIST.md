@@ -32,8 +32,13 @@
 - [ ] **iOS 권한 문구 점검** — `npx expo config --type introspect | grep -iE "UsageDescription|RECORD_AUDIO"`
       영문 `Allow $(PRODUCT_NAME)...` 이 하나라도 남아 있으면 App Store 자동 반려 대상.
       정상 상태는 사진첩·카메라·위치(WhenInUse) 3개뿐이며 전부 한국어.
+- [ ] **스토어 상품 설정 점검** — `npm run check:store`
+      Play·App Store 를 직접 조회해 청구 주기(월간=1개월) / 한국 가격 / 평생 상품이 1회 결제인지를
+      앱 표시값과 대조한다. FAIL 이 하나라도 있으면 빌드 금지.
+      코드 검사로는 절대 안 잡히는 종류다 — 콘솔 칸 하나가 틀리면 돈이 잘못 빠진다.
 - [ ] 인터넷(Wi-Fi) 정상 연결
 - [ ] Firebase 콘솔에서 `firestore.rules` / `storage.rules` 최신 배포 상태
+- [ ] Cloud Functions 시크릿 등록 상태 — `REVENUECAT_API_KEY`(V1), `REVENUECAT_WEBHOOK_SECRET`
 - [ ] `admins/{내UID}` doc 존재 (어드민 메뉴 노출 조건)
 - [ ] `users/{내UID}/meta/entitlement` doc 자동 생성 확인 (앱 첫 진입 후)
 

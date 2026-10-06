@@ -122,7 +122,7 @@ function RootLayoutInner() {
     if (user) {
       watchBlocks();
       watchAdmin(user.id);
-      ensureEntitlementDoc(user.id, Date.now()).catch((e) => {
+      ensureEntitlementDoc(user.id).catch((e) => {
         console.error('ensureEntitlementDoc failed:', e);
       });
       // 푸시 토큰 발급 + Firestore 저장 (권한 거부/시뮬레이터/웹은 silent skip)
@@ -132,7 +132,17 @@ function RootLayoutInner() {
       // userLookup 보장 — 이미 가입자 중 lookup doc 없는 경우를 위한 backfill
       ensureUserLookup(user.id, user.shortId, user.displayName ?? null).catch(() => {});
       // RevenueCat user identify — 같은 계정의 구매 이력이 기기 간 동기화되도록.
-      identifyPurchaseUser(user.id).catch(() => {});
+      // initPurchases 와 같은 interaction 창에서 돌린다. (cold-start 동기 호출 crash 회피 — 위 주석 참고)
+      // identifyPurchaseUser 내부에서 init 완료를 await 하므로 두 호출의 순서는 상관없다.
+      const idTask = InteractionManager.runAfterInteractions(() => {
+        identifyPurchaseUser(user.id).then((ok) => {
+          if (!ok) {
+            // 실패해도 부팅은 막지 않는다. 결제 직전에 다시 시도하고, 그때도 실패하면 결제를 중단시킨다.
+            console.error('[boot] RevenueCat identify failed for', user.id);
+          }
+        });
+      });
+      return () => idTask.cancel?.();
     } else {
       unwatchBlocks();
       unwatchAdmin();

@@ -1,0 +1,50 @@
+{
+  "packageName": "com.ddmsherpa.app",
+  "productId": "premium_lifetime",
+  "listings": [
+    {
+      "languageCode": "en-US",
+      "title": "프리미엄 평생",
+      "description": "한 번 결제로 동대문 셰르파 프리미엄 모든 기능 평생 이용"
+    },
+    {
+      "languageCode": "ko-KR",
+      "title": "프리미엄 평생",
+      "description": "한 번 결제로 동대문 셰르파 프리미엄 모든 기능을 평생 이용합니다."
+    }
+  ],
+  "purchaseOptions": [
+    {
+      "purchaseOptionId": "lifetime",
+      "state": "ACTIVE",
+      "buyOption": {
+        "legacyCompatible": true
+      },
+      "regionalPricingAndAvailabilityConfigs": [
+        {
+          "regionCode": "KR",
+          "price": {
+            "currencyCode": "KRW",
+            "units": "39000"
+          },
+          "availability": "AVAILABLE"
+        },
+        {
+          "regionCode": "US",
+          "price": {
+            "currencyCode": "USD",
+            "units": "22",
+            "nanos": 990000000
+          },
+          "availability": "AVAILABLE"
+        }
+      ],
+      "taxAndComplianceSettings": {
+        "withdrawalRightType": "WITHDRAWAL_RIGHT_DIGITAL_CONTENT"
+      }
+    }
+  ],
+  "regionsVersion": {
+    "version": "2026/01"
+  }
+}
