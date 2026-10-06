@@ -16,3 +16,4 @@ web-build/
 .DS_Store
 .auto-backup.log
 dist-web/
+.qa-web-server.log

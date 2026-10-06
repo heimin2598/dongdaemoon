@@ -11,7 +11,9 @@
     "tunnel": "expo start --go --port 8085 --tunnel",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
-    "check:store": "node scripts/check-store-products.mjs"
+    "check:store": "node scripts/check-store-products.mjs",
+    "qa:web": "node scripts/qa-web.mjs",
+    "audit:entitlements": "node scripts/audit-entitlements.mjs"
   },
   "dependencies": {
     "@expo/metro-runtime": "~6.1.2",
@@ -67,6 +69,7 @@
     "babel-plugin-module-resolver": "^5.0.2",
     "eslint": "^8.57.0",
     "eslint-config-expo": "~10.0.0",
+    "playwright": "^1.63.0",
     "react-native-svg-transformer": "^1.5.3",
     "sharp": "^0.34.5",
     "svg-path-parser": "^1.1.0",
