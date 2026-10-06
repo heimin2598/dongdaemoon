@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ChevronLeft, Crown, ImageOff, MessageSquare, Plus } from 'lucide-react-native';
+import { ChevronLeft, Clock, Crown, ImageOff, MessageSquare, Plus } from 'lucide-react-native';
 import { showInfoAlert } from '@/utils/alerts';
 import { Colors } from '@/constants/colors';
 import { useAuthStore } from '@/stores/authStore';
@@ -17,6 +17,11 @@ import { useBlocksStore } from '@/stores/blocksStore';
 import { usePartsRequestsStore } from '@/stores/partsRequestsStore';
 import { PartsCategory, PartsRequest, Shop } from '@/types';
 import { PARTS_CATEGORY_LABEL } from '@/constants/partsCategories';
+import {
+  FEATURE_PARTS_ENABLED,
+  PARTS_COMING_SOON_BODY,
+  PARTS_COMING_SOON_TITLE,
+} from '@/constants/features';
 import { subscribeMyShops } from '@/lib/shops';
 import { useEntitlement } from '@/hooks/useEntitlement';
 import { PaywallSheet } from '@/components/common/PaywallSheet';
@@ -108,6 +113,7 @@ export default function PartsFeedScreen() {
   const [myFieldOnly, setMyFieldOnly] = useState<boolean>(true);
 
   useEffect(() => {
+    if (!FEATURE_PARTS_ENABLED) return;
     if (!isPremium) return;
     watchFeed();
     return () => unwatchFeed();
@@ -162,6 +168,26 @@ export default function PartsFeedScreen() {
     }
     router.push('/parts/new');
   };
+
+  // 부자재 찾기 전체 비활성 — 딥링크/배너로 들어와도 "준비 중" 으로 받는다.
+  // 요청만 쌓이고 답이 없는 화면이 되면 사용자가 기능을 불신한다.
+  if (!FEATURE_PARTS_ENABLED) {
+    return (
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <View style={styles.header}>
+          {!isMerchantActive && <PartsBackButton />}
+          <Text style={styles.headerTitle}>{partsTitle}</Text>
+        </View>
+        <View style={styles.lockedWrap}>
+          <View style={[styles.lockedIconWrap, { backgroundColor: '#E8EFF8' }]}>
+            <Clock size={36} color={Colors.primary} strokeWidth={2.2} />
+          </View>
+          <Text style={styles.lockedTitle}>{PARTS_COMING_SOON_TITLE}</Text>
+          <Text style={styles.lockedDesc}>{PARTS_COMING_SOON_BODY}</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   // 비-프리미엄 사용자는 진입 시 안내 화면 (사장님은 본업이라 게이트 면제)
   if (user && !entitlementLoading && !isPremium && !isMerchantActive) {

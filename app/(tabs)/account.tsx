@@ -87,7 +87,7 @@ export default function MyTab() {
             <Text style={styles.guestTitle}>비회원으로 둘러보고 계세요</Text>
             <Text style={styles.guestDesc}>
               매장 검색·길안내·지도 보기·관심 매장은 자유롭게 사용하실 수 있어요.{'\n'}
-              메모, 메신저, 부자재 신청 등의 기능을 사용하려면 로그인이 필요합니다.
+              매장 메모와 관심 매장 등의 기능을 사용하려면 로그인이 필요합니다.
             </Text>
             <View style={styles.guestBtnRow}>
               <Pressable style={styles.guestBtnPrimary} onPress={() => router.push('/(auth)/login')}>

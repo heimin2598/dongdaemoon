@@ -48,7 +48,7 @@ import { BUILDING_ORDER } from '@/constants/buildings';
 import { getStoreByCode } from '@/data/stores';
 import { APPROVAL_PENDING_FLAG } from '@/constants/approval';
 import { showInfoAlert } from '@/utils/alerts';
-import { FEATURE_MESSENGER_ENABLED } from '@/constants/features';
+import { FEATURE_MESSENGER_ENABLED, FEATURE_PARTS_ENABLED } from '@/constants/features';
 import { subscribeMyShops } from '@/lib/shops';
 import {
   DEFAULT_MAIN_COLOR,
@@ -218,7 +218,11 @@ export default function HomeScreen() {
     return () => unsub();
   }, []);
 
-  const banners = remoteBanners.length > 0 ? remoteBanners : FALLBACK_BANNERS;
+  // 미오픈 기능으로 보내는 배너는 fallback 에서도 빼야 한다 — 눌러도 못 가는 자리가 된다.
+  const fallbackBanners = FEATURE_PARTS_ENABLED
+    ? FALLBACK_BANNERS
+    : FALLBACK_BANNERS.filter((b) => !b.landingUrl?.includes('/parts'));
+  const banners = remoteBanners.length > 0 ? remoteBanners : fallbackBanners;
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -402,12 +406,14 @@ export default function HomeScreen() {
                 onPress={() => router.push('/(tabs)/messenger' as any)}
               />
             )}
-            <StatCell
-              label="신규 요청"
-              value={merchantStats.newPartsRequestCount}
-              Icon={Sparkles}
-              onPress={() => router.push('/(tabs)/parts' as any)}
-            />
+            {FEATURE_PARTS_ENABLED && (
+              <StatCell
+                label="신규 요청"
+                value={merchantStats.newPartsRequestCount}
+                Icon={Sparkles}
+                onPress={() => router.push('/(tabs)/parts' as any)}
+              />
+            )}
             <StatCell
               label="상품"
               value={merchantStats.productCount}
@@ -550,6 +556,7 @@ export default function HomeScreen() {
         {!isMerchantActive && (
           <>
             {/* 부자재 찾기 진입 바 — 가로 긴 단일 버튼 */}
+            {FEATURE_PARTS_ENABLED && (
             <Pressable
               style={styles.partsBar}
               onPress={() => router.push('/parts' as any)}
@@ -565,6 +572,7 @@ export default function HomeScreen() {
               </View>
               <ChevronRight size={16} color={Colors.textMuted} />
             </Pressable>
+            )}
 
             <Text style={styles.sectionTitle}>지도에서 보기</Text>
             <View style={styles.mapRow}>
@@ -744,7 +752,7 @@ function OwnerTodoCard({
       label: `미답 메시지 ${stats.unreadMessageCount}건 확인`,
       onPress: () => router.push('/(tabs)/messenger' as any),
     });
-  if (stats.newPartsRequestCount > 0)
+  if (FEATURE_PARTS_ENABLED && stats.newPartsRequestCount > 0)
     todos.push({
       key: 'parts',
       label: `신규 부자재 요청 ${stats.newPartsRequestCount}건`,
@@ -919,13 +927,6 @@ function OwnerGuideCard() {
       title: '내 매장 QR 인쇄해서 매장에 부착',
       desc: '방문 손님이 스캔하면 바로 관심 매장 등록 가능',
       onPress: () => router.push('/(tabs)/home' as any),
-    },
-    {
-      key: 'parts',
-      icon: '🪡',
-      title: '부자재 요청에 답글 달기',
-      desc: '내 분야 요청에 빠르게 답하면 신규 손님이 늘어요',
-      onPress: () => router.push('/(tabs)/parts' as any),
     },
     {
       key: 'customers',

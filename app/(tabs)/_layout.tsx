@@ -15,7 +15,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { Colors } from '@/constants/colors';
 import { useAuthStore } from '@/stores/authStore';
-import { FEATURE_MESSENGER_ENABLED } from '@/constants/features';
+import { FEATURE_MESSENGER_ENABLED, FEATURE_PARTS_ENABLED } from '@/constants/features';
 
 function TabIcon({ Icon, focused }: { Icon: LucideIcon; focused: boolean }) {
   return (
@@ -111,8 +111,9 @@ export default function TabsLayout() {
         options={{
           title: isMerchant ? t('tabs.partsSupply') : t('tabs.parts'),
           tabBarIcon: ({ focused }) => <TabIcon Icon={Component} focused={focused} />,
-          // visitor 는 부자재 찾기를 탭에서 제외 — 홈 진입 바로 대체
-          href: isMerchant ? '/parts' : null,
+          // 부자재 찾기 미오픈 상태에서는 사장님에게도 숨긴다.
+          // (열려 있어도 visitor 는 탭 대신 홈 진입 바를 쓴다)
+          href: FEATURE_PARTS_ENABLED && isMerchant ? '/parts' : null,
         }}
       />
 

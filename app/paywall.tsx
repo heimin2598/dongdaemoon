@@ -39,7 +39,7 @@ import {
   redeemPromoCode,
 } from '@/lib/promoCodes';
 import { showInfoAlert } from '@/utils/alerts';
-import { FEATURE_MESSENGER_ENABLED } from '@/constants/features';
+import { FEATURE_MESSENGER_ENABLED, FEATURE_PARTS_ENABLED } from '@/constants/features';
 
 const MAX_PROMO_ATTEMPTS_PER_DAY = 5;
 
@@ -82,7 +82,9 @@ const FREE_FEATURES: Array<{ label: string; included: boolean }> = [
   ...(FEATURE_MESSENGER_ENABLED
     ? [{ label: '사장님 메신저 (1:1 채팅 · 번역)', included: false }]
     : []),
-  { label: '부자재 찾기 (사진으로 매칭)', included: false },
+  ...(FEATURE_PARTS_ENABLED
+    ? [{ label: '부자재 찾기 (사진으로 매칭)', included: false }]
+    : []),
 ];
 
 const PREMIUM_FEATURES: Array<{ label: string; included: boolean }> = [
@@ -94,7 +96,9 @@ const PREMIUM_FEATURES: Array<{ label: string; included: boolean }> = [
   ...(FEATURE_MESSENGER_ENABLED
     ? [{ label: '사장님 메신저 (1:1 채팅 · 번역)', included: true }]
     : []),
-  { label: '부자재 찾기 (사진으로 매칭)', included: true },
+  ...(FEATURE_PARTS_ENABLED
+    ? [{ label: '부자재 찾기 (사진으로 매칭)', included: true }]
+    : []),
 ];
 
 export default function PaywallScreen() {

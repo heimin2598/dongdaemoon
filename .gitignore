@@ -17,3 +17,6 @@ web-build/
 .auto-backup.log
 dist-web/
 .qa-web-server.log
+.device-qa*.log
+.web-qa.log
+.device-build.log
