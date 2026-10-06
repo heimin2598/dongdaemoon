@@ -32,6 +32,9 @@
 - [ ] **iOS 권한 문구 점검** — `npx expo config --type introspect | grep -iE "UsageDescription|RECORD_AUDIO"`
       영문 `Allow $(PRODUCT_NAME)...` 이 하나라도 남아 있으면 App Store 자동 반려 대상.
       정상 상태는 사진첩·카메라·위치(WhenInUse) 3개뿐이며 전부 한국어.
+- [ ] **웹 자동 점검** — `npm run web` 띄운 뒤 다른 터미널에서 `npm run qa:web`
+      주요 라우트를 실제로 열어 콘솔 에러 / ErrorBoundary 를 잡고, 페이월 결제 경로까지 클릭한다.
+      tsc 가 통과해도 mount 에서 터지는 코드가 여기서 걸린다.
 - [ ] **스토어 상품 설정 점검** — `npm run check:store`
       Play·App Store 를 직접 조회해 청구 주기(월간=1개월) / 한국 가격 / 평생 상품이 1회 결제인지를
       앱 표시값과 대조한다. FAIL 이 하나라도 있으면 빌드 금지.
